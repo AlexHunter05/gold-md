@@ -7,9 +7,9 @@ from pathlib import Path
 
 def load_eam(filename):
     filename = Path(filename)
-
+    
     if not filename.is_absolute():
-        filename = Path("/content/gold-md/src/gold_md") / filename
+        filename = Path(__file__).parent / filename
 
     with open(filename, "r") as file:
         lines = file.readlines()
