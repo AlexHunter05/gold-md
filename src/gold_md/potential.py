@@ -1,4 +1,4 @@
-from .load_eam import load_eam
+import numpy as np
 
 def potential(positions, cutoff, F_spline, density_spline, rphi_spline):
     natoms = len(positions)
