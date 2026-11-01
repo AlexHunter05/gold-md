@@ -1,18 +1,14 @@
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "Alexs_gold_md_code"
+name = "alexs-gold-md-code"
 version = "0.1.0"
 description = "Molecular dynamics simulation of gold using an EAM potential"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = [
-    "numpy",
-    "scipy",
-]
+dependencies = ["numpy", "scipy"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gold_md"]
