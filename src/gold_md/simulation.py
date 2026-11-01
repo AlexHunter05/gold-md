@@ -1,28 +1,37 @@
-
-import numpy as np
+from .load_eam import load_eam
 from .potential import potential
+from .save_xyz import save_xyz
 
-# Paste your kinetic() function here.
-
-# Paste your AMDC class here.
 class AMDC:
-    def __init__(self):
+    def __init__(self, eam_file, positions, ensemble="NVT"):
+        # Load EAM potential
+        self.mass, self.cutoff, self.F_spline, self.density_spline, self.rphi_spline = load_eam(eam_file)
+
+        # Select ensemble
+        self.ensemble = ensemble.upper()
+        if self.ensemble not in ["NVE", "NVT"]:
+            raise ValueError("Ensemble must be either 'NVE' or 'NVT'")
+
         # Simulation settings
         self.stride = 10
         self.timestep = 1.0
         self.temperature = 300.0
         self.friction = 0.01
 
-        # Initial atomic configuration
-        self.positions = np.array(initial_positions, dtype=float)
-        self.natoms = len(self.positions)
-        self.masses = np.full(self.natoms, mass)
-        self.moving_atoms = np.ones(self.natoms)
-        self.non_conservative_atoms = np.zeros(self.natoms)
-
         # Physical constants
         self.kB = 8.617333262e-5
         self.accel_conversion = 0.0096485332
+
+        # Initial atomic configuration
+        self.positions = np.array(positions, dtype=float)
+        self.natoms = len(self.positions)
+        self.masses = np.full(self.natoms, self.mass)
+        self.moving_atoms = np.ones(self.natoms)
+
+        # Non-conservative force settings
+        self.K = 0.0
+        self.centre = np.zeros(3)
+        self.non_conservative_atoms = np.zeros(self.natoms)
 
         # Initial thermal velocities
         self.rng = np.random.default_rng(42)
@@ -39,32 +48,59 @@ class AMDC:
         self.therm = 0.0
 
         # Initial forces and energy
-        self.eng, self.forces = potential(self.positions)
+        self.calculate_forces()
 
         self.trajectory = []
         self.potential_energies = []
         self.kinetic_energies = []
         self.total_energies = []
 
-    def set_position(self, positions):
-        self.positions = np.array(positions, dtype=float)
-        self.eng, self.forces = potential(self.positions)
+    def fix_atoms(self, atoms):
+        self.moving_atoms[atoms] = 0
+
+    def apply_non_conservative_force(self, atoms):
+        self.non_conservative_atoms[atoms] = 1
+
+    def non_conservative_force(self, K, centre):
+        x0, y0, z0 = centre
+
+        forces = np.zeros((self.natoms, 3))
+
+        dx = self.positions[:, 0] - x0
+        dy = self.positions[:, 1] - y0
+
+        forces[:, 0] = -K * dy
+        forces[:, 1] = K * dx
+
+        return forces * self.non_conservative_atoms[:, None]
+    
+    def calculate_forces(self):
+        self.eng, self.forces = potential(
+            self.positions,
+            self.cutoff,
+            self.F_spline,
+            self.density_spline,
+            self.rphi_spline
+        )
+        self.forces += self.non_conservative_force(self.K, self.centre)
 
     def md(self, nsteps):
         # Velocity Verlet algorithm
         for step in range(nsteps):
-            self.therm += kinetic(self.vel, self.masses, self.accel_conversion)
-            self.vel = self.vel * self.decay + self.random_factor * np.random.normal(size=(self.natoms, 3))
-            self.therm -= kinetic(self.vel, self.masses, self.accel_conversion)
+            if self.ensemble == "NVT":
+              self.therm += kinetic(self.vel, self.masses, self.accel_conversion)
+              self.vel = (self.vel * self.decay + self.random_factor * self.rng.normal(size=(self.natoms, 3))) * self.moving_atoms[:, None]
+              self.therm -= kinetic(self.vel, self.masses, self.accel_conversion)
 
-            self.vel += (0.5 * self.accel_conversion * self.forces / self.masses[:, None] * self.timestep)
-            self.positions += self.vel * self.timestep
-            self.eng, self.forces = potential(self.positions)
-            self.vel += (0.5 * self.accel_conversion * self.forces / self.masses[:, None] * self.timestep)
+            self.vel += (0.5 * self.accel_conversion * self.forces / self.masses[:, None] * self.timestep) * self.moving_atoms[:, None]
+            self.positions += self.vel * self.timestep * self.moving_atoms[:, None]
+            self.calculate_forces()
+            self.vel += (0.5 * self.accel_conversion * self.forces / self.masses[:, None] * self.timestep) * self.moving_atoms[:, None]
 
-            self.therm += kinetic(self.vel, self.masses, self.accel_conversion)
-            self.vel = self.vel * self.decay + self.random_factor * np.random.normal(size=(self.natoms, 3))
-            self.therm -= kinetic(self.vel, self.masses, self.accel_conversion)
+            if self.ensemble == "NVT":
+              self.therm += kinetic(self.vel, self.masses, self.accel_conversion)
+              self.vel = (self.vel * self.decay + self.random_factor * self.rng.normal(size=(self.natoms, 3))) * self.moving_atoms[:, None]
+              self.therm -= kinetic(self.vel, self.masses, self.accel_conversion)
 
             # Record energies
             if step % self.stride == 0:
@@ -73,5 +109,3 @@ class AMDC:
                 self.potential_energies.append(self.eng)
                 self.kinetic_energies.append(KE)
                 self.total_energies.append(self.eng + KE + self.therm)
-
-        self.trajectory = np.array(self.trajectory)
