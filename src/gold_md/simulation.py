@@ -1,6 +1,10 @@
 from .load_eam import load_eam
 from .potential import potential
 from .trajectory import save_xyz
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.interpolate import CubicSpline
+from pathlib import Path
 
 class AMDC:
     def __init__(self, eam_file, positions, ensemble="NVT"):
