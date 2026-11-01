@@ -2,5 +2,17 @@ from .simulation import AMDC
 from .load_eam import load_eam
 from .potential import potential, kinetic
 from .trajectory import save_xyz
+from .analysis import plot_energy_conservation, plot_PE, plot_KE, plot_temp
 
-__all__ = ["AMDC", "load_eam", "potential", "kinetic", "save_xyz"]
+__all__ = [
+    "AMDC",
+    "load_eam",
+    "potential",
+    "kinetic",
+    "save_xyz",
+    "plot_energy_conservation",
+    "plot_potential_energy",
+    "plot_kinetic_energy",
+    "plot_temperature",
+    "plot_all"
+]
