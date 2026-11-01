@@ -1,7 +1,6 @@
 import numpy as np
 from .load_eam import load_eam
-from .potential import potential
-from .trajectory import save_xyz
+from .potential import potential, kinetic
 
 class AMDC:
     def __init__(self, eam_file, positions, ensemble="NVT"):
