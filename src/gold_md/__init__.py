@@ -11,8 +11,7 @@ __all__ = [
     "kinetic",
     "save_xyz",
     "plot_energy_conservation",
-    "plot_potential_energy",
-    "plot_kinetic_energy",
-    "plot_temperature",
-    "plot_all"
+    "plot_PE",
+    "plot_KE",
+    "plot_temp"
 ]
