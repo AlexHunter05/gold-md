@@ -16,7 +16,7 @@ def plot_energy_conservation(my_md):
     plt.grid(True)
     plt.show()
 
-def plot_potential_energy(my_md):
+def plot_PE(my_md):
     plt.figure(figsize=(10, 6))
     plt.plot(time, my_md.potential_energies, label="Potential Energy")
     plt.xlabel("Time (fs)")
@@ -25,7 +25,7 @@ def plot_potential_energy(my_md):
     plt.grid(True)
     plt.show()
 
-def plot_kinetic_energy(my_md):
+def plot_KE(my_md):
     ave_KE = np.mean(np.array(my_md.kinetic_energies)[equilibration_steps // my_md.stride:])
     expected_KE = 1.5 * np.sum(my_md.moving_atoms) * my_md.kB * my_md.temperature
 
@@ -40,7 +40,7 @@ def plot_kinetic_energy(my_md):
     plt.grid(True)
     plt.show()
 
-def plot_temperature(my_md):
+def plot_temp(my_md):
     degrees_of_freedom = 3 * np.sum(my_md.moving_atoms)
     temps = (2 * np.array(my_md.kinetic_energies) / (my_md.kB * degrees_of_freedom))
     ave_temps = np.mean(temps[equilibration_steps // my_md.stride:])
