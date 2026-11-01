@@ -1,6 +1,6 @@
 from .load_eam import load_eam
 from .potential import potential
-from .save_xyz import save_xyz
+from .trajectory import save_xyz
 
 class AMDC:
     def __init__(self, eam_file, positions, ensemble="NVT"):
