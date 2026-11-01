@@ -1,7 +1,6 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from scipy.interpolate import CubicSpline
 from pathlib import Path
+from scipy.interpolate import CubicSpline
 
 def load_eam(filename):
     filename = Path(filename)
