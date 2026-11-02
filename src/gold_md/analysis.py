@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 
 # Time axis (fs)
 def get_time(my_md):
+    print("\n")
     return np.arange(len(my_md.total_energies)) * my_md.stride * my_md.timestep
 
 def plot_energy_conservation(my_md):
