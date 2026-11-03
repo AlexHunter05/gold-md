@@ -3,7 +3,7 @@ from .load_eam import load_eam
 from .potential import potential, kinetic
 
 class AMDC:
-    def __init__(self, eam_file, positions, ensemble="NVT"):
+    def __init__(self, eam_file, positions, ensemble="NVT", seed=42):
         # Load EAM potential
         self.mass, self.cutoff, self.F_spline, self.density_spline, self.rphi_spline = load_eam(eam_file)
 
@@ -34,7 +34,7 @@ class AMDC:
         self.non_conservative_atoms = np.zeros(self.natoms)
 
         # Initial thermal velocities
-        self.rng = np.random.default_rng(42)
+        self.rng = np.random.default_rng(seed)
         velocity_sigma = np.sqrt(self.kB * self.temperature * self.accel_conversion / self.masses[0])
         self.vel = self.rng.normal(0, velocity_sigma, size=(self.natoms, 3))
         self.vel -= np.mean(self.vel, axis=0)
@@ -71,9 +71,8 @@ class AMDC:
 
         forces[:, 0] = -K * dy
         forces[:, 1] = K * dx
-
         return forces * self.non_conservative_atoms[:, None]
-    
+
     def calculate_forces(self):
         self.eng, self.forces = potential(
             self.positions,
