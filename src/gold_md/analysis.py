@@ -66,7 +66,8 @@ def plot_temp(my_md, equilibration_steps=1000):
 
 def plot_displacement(my_md):
     time = get_time(my_md)
-    centre_positions = my_md.trajectory[:, 0, :]
+    trajectory = np.array(my_md.trajectory)
+    centre_positions = trajectory[:, 0, :]
     distances = np.linalg.norm(centre_positions, axis=1)
 
     plt.figure(figsize=(10, 5))
