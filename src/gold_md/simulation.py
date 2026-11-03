@@ -29,7 +29,7 @@ class AMDC:
         self.moving_atoms = np.ones(self.natoms)
 
         # Non-conservative force settings
-        self.K = 0.0
+        self.K = 1.0
         self.centre = np.zeros(3)
         self.non_conservative_atoms = np.zeros(self.natoms)
 
