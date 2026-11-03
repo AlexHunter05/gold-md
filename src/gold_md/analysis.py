@@ -39,10 +39,10 @@ def plot_KE(my_md, equilibration_steps=1000):
     if my_md.ensemble == "NVT":
         plt.axhline(ave_KE, color="red", linestyle="--", label=f"Average KE = {ave_KE:.3f}")
         plt.axhline(expected_KE, color="green", linestyle="--", label=f"Expected KE = {expected_KE:.3f}")
+        plt.legend()
     plt.xlabel("Time (fs)")
     plt.ylabel("Energy (eV)")
     plt.title(f"Kinetic Energy for {my_md.natoms}-atom Gold Cluster")
-    plt.legend()
     plt.grid(True)
     plt.show()
 
@@ -57,9 +57,22 @@ def plot_temp(my_md, equilibration_steps=1000):
     if my_md.ensemble == "NVT":
         plt.axhline(ave_temps, color="red", linestyle="--", label=f"Average Temp = {ave_temps:.2f}")
         plt.axhline(my_md.temperature, color="green", linestyle="--", label=f"Target Temp = {my_md.temperature:.2f}")
+        plt.legend()
     plt.xlabel("Time (fs)")
     plt.ylabel("Temperature (Kelvin)")
     plt.title(f"Temperature for {my_md.natoms}-atom Gold Cluster")
-    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+def plot_displacement(my_md):
+    time = get_time(my_md)
+    centre_positions = my_md.trajectory[:, 0, :]
+    distances = np.linalg.norm(centre_positions, axis=1)
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(time, distances)
+    plt.xlabel("Time (fs)")
+    plt.ylabel("Distance from centre (Å)")
+    plt.title("Central Atom Displacement")
     plt.grid(True)
     plt.show()
