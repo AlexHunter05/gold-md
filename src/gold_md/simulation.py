@@ -103,8 +103,10 @@ class AMDC:
               self.vel = (self.vel * self.decay + self.random_factor * self.rng.normal(size=(self.natoms, 3))) * self.moving_atoms[:, None]
               self.therm -= kinetic(self.vel, self.masses, self.accel_conversion)
 
-            # Record energies and trajectory
             self.steps += 1
+            escaped = escape_radius is not None and np.linalg.norm(self.positions[0]) > escape_radius
+
+            # Record energies and trajectory
             if self.steps % self.stride == 0 or escaped:
                 KE = kinetic(self.vel, self.masses, self.accel_conversion)
                 self.trajectory.append(self.positions.copy())
@@ -112,7 +114,6 @@ class AMDC:
                 self.kinetic_energies.append(KE)
                 self.total_energies.append(self.eng + KE + self.therm)
             
-            escaped = escape_radius is not None and np.linalg.norm(self.positions[0]) > escape_radius
             if escaped:
                 return self.steps * self.timestep
     
