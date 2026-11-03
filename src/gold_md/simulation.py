@@ -13,6 +13,7 @@ class AMDC:
             raise ValueError("Ensemble must be either 'NVE' or 'NVT'")
 
         # Simulation settings
+        self.steps = 0
         self.stride = 10
         self.timestep = 1.0
         self.temperature = 300.0
@@ -57,6 +58,7 @@ class AMDC:
 
     def fix_atoms(self, atoms):
         self.moving_atoms[atoms] = 0
+        self.vel[atoms] = 0
 
     def apply_non_conservative_force(self, atoms):
         self.non_conservative_atoms[atoms] = 1
@@ -83,7 +85,7 @@ class AMDC:
         )
         self.forces += self.non_conservative_force(self.K, self.centre)
 
-    def md(self, nsteps):
+    def md(self, nsteps, escape_radius=None):
         # Velocity Verlet algorithm
         for step in range(nsteps):
             if self.ensemble == "NVT":
@@ -101,10 +103,17 @@ class AMDC:
               self.vel = (self.vel * self.decay + self.random_factor * self.rng.normal(size=(self.natoms, 3))) * self.moving_atoms[:, None]
               self.therm -= kinetic(self.vel, self.masses, self.accel_conversion)
 
-            # Record energies
-            if step % self.stride == 0:
+            # Record energies and trajectory
+            self.steps += 1
+            if self.steps % self.stride == 0 or escaped:
                 KE = kinetic(self.vel, self.masses, self.accel_conversion)
                 self.trajectory.append(self.positions.copy())
                 self.potential_energies.append(self.eng)
                 self.kinetic_energies.append(KE)
                 self.total_energies.append(self.eng + KE + self.therm)
+            
+            escaped = escape_radius is not None and np.linalg.norm(self.positions[0]) > escape_radius
+            if escaped:
+                return self.steps * self.timestep
+    
+        return None
