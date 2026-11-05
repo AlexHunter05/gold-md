@@ -85,13 +85,18 @@ class AMDC:
         )
         self.forces += self.non_conservative_force(self.K, self.centre)
 
-    def md(self, nsteps, escape_radius=None):
+    def md(self, nsteps=None, until_escape=False, max_steps=100000):
+        # Automatically calculate escape radius
+        if until_escape:
+            escape_radius = np.max(np.linalg.norm(self.positions, axis=1)) + 2.88
+            nsteps = max_steps
+
         # Velocity Verlet algorithm
         for step in range(nsteps):
             if self.ensemble == "NVT":
-              self.therm += kinetic(self.vel, self.masses, self.accel_conversion)
-              self.vel = (self.vel * self.decay + self.random_factor * self.rng.normal(size=(self.natoms, 3))) * self.moving_atoms[:, None]
-              self.therm -= kinetic(self.vel, self.masses, self.accel_conversion)
+                self.therm += kinetic(self.vel, self.masses, self.accel_conversion)
+                self.vel = (self.vel * self.decay + self.random_factor * self.rng.normal(size=(self.natoms, 3))) * self.moving_atoms[:, None]
+                self.therm -= kinetic(self.vel, self.masses, self.accel_conversion)
 
             self.vel += (0.5 * self.accel_conversion * self.forces / self.masses[:, None] * self.timestep) * self.moving_atoms[:, None]
             self.positions += self.vel * self.timestep * self.moving_atoms[:, None]
@@ -99,12 +104,12 @@ class AMDC:
             self.vel += (0.5 * self.accel_conversion * self.forces / self.masses[:, None] * self.timestep) * self.moving_atoms[:, None]
 
             if self.ensemble == "NVT":
-              self.therm += kinetic(self.vel, self.masses, self.accel_conversion)
-              self.vel = (self.vel * self.decay + self.random_factor * self.rng.normal(size=(self.natoms, 3))) * self.moving_atoms[:, None]
-              self.therm -= kinetic(self.vel, self.masses, self.accel_conversion)
+                self.therm += kinetic(self.vel, self.masses, self.accel_conversion)
+                self.vel = (self.vel * self.decay + self.random_factor * self.rng.normal(size=(self.natoms, 3))) * self.moving_atoms[:, None]
+                self.therm -= kinetic(self.vel, self.masses, self.accel_conversion)
 
             self.steps += 1
-            escaped = escape_radius is not None and np.linalg.norm(self.positions[0]) > escape_radius
+            escaped = until_escape and np.linalg.norm(self.positions[0]) > escape_radius
 
             # Record energies and trajectory
             if self.steps % self.stride == 0 or escaped:
@@ -113,8 +118,8 @@ class AMDC:
                 self.potential_energies.append(self.eng)
                 self.kinetic_energies.append(KE)
                 self.total_energies.append(self.eng + KE + self.therm)
-            
+
             if escaped:
                 return self.steps * self.timestep
-    
+
         return None
