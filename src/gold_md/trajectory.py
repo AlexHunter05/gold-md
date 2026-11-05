@@ -5,3 +5,4 @@ def save_xyz(simulation, filename):
             file.write(f"{simulation.natoms}\n\n")
             for x, y, z in frame:
                 file.write(f"Au {x:.8f} {y:.8f} {z:.8f}\n")
+    print("Trajectory saved")
