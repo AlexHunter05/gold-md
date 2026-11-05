@@ -85,7 +85,7 @@ class AMDC:
         )
         self.forces += self.non_conservative_force(self.K, self.centre)
 
-    def md(self, nsteps=None, until_escape=False, max_steps=100000):
+    def md(self, nsteps=None, until_escape=False, max_steps=25000):
         # Automatically calculate escape radius
         if until_escape:
             escape_radius = np.max(np.linalg.norm(self.positions, axis=1)) + 2.88
