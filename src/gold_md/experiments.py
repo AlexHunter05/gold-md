@@ -4,11 +4,12 @@ from .simulation import AMDC
 from .trajectory import save_xyz
 
 
-def run_escape_time(potential,positions, output_folder, seed, max_steps=None):
+def run_escape_time(potential, positions, output_folder, seed, fixed, max_steps=None):
     my_md = AMDC(potential, positions, "NVE", seed=seed)
     natoms = len(positions)
 
-    my_md.fix_atoms(range(1, natoms))
+    if fixed:
+        my_md.fix_atoms(range(1, natoms))
     my_md.apply_non_conservative_force(0)
 
     if max_steps is None:
@@ -22,11 +23,11 @@ def run_escape_time(potential,positions, output_folder, seed, max_steps=None):
     return escape_time
 
 
-def repeat_simulations(potential, positions, output_folder, nruns, max_steps=None):
+def repeat_simulations(potential, positions, output_folder, nruns, fixed, max_steps=None):
     escape_times = []
 
     for seed in range(1, nruns + 1):
-        escape_time = run_escape_time(potential, positions, output_folder, seed, max_steps)
+        escape_time = run_escape_time(potential, positions, output_folder, seed, fixed, max_steps)
         escape_times.append(escape_time)
         print(f"Run {seed}/{nruns} complete. Escape time = {escape_time} fs")
 
