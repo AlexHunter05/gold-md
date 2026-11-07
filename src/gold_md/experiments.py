@@ -5,29 +5,29 @@ from .trajectory import save_xyz
 
 
 def run_escape_time(potential, positions, output_folder, seed, fixed, max_steps=None):
-    my_md = AMDC(potential, positions, "NVE", seed=seed)
+    simulation = AMDC(potential, positions, "NVE", seed=seed)
     natoms = len(positions)
 
     if fixed:
-        my_md.fix_atoms(range(1, natoms))
-    my_md.apply_non_conservative_force(0)
+        simulation.fix_atoms(range(1, natoms))
+    simulation.apply_non_conservative_force(0)
 
     if max_steps is None:
-        escape_time = my_md.md(until_escape=True)
+        escape_time = simulation.md(until_escape=True)
     else:
-        escape_time = my_md.md(until_escape=True, max_steps=max_steps)
+        escape_time = simulation.md(until_escape=True, max_steps=max_steps)
 
     os.makedirs(output_folder, exist_ok=True)
-    save_xyz(my_md, f"{output_folder}/simulation_{seed}")
+    save_xyz(simulation, f"{output_folder}/simulation_{seed}")
 
-    return escape_time
+    return simulation, escape_time
 
 
 def repeat_simulations(potential, positions, output_folder, nruns, fixed, max_steps=None):
     escape_times = []
 
     for seed in range(1, nruns + 1):
-        escape_time = run_escape_time(potential, positions, output_folder, seed, fixed, max_steps)
+        simulation, escape_time = run_escape_time(potential, positions, output_folder, seed, fixed, max_steps)
         escape_times.append(escape_time)
         print(f"Run {seed}/{nruns} complete. Escape time = {escape_time} fs")
 
@@ -43,4 +43,4 @@ def repeat_simulations(potential, positions, output_folder, nruns, fixed, max_st
 
     print(f"\nEscape times saved to {results_file}")
 
-    return escape_times
+    return simulation, escape_times
