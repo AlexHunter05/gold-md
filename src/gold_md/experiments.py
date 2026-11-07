@@ -37,9 +37,9 @@ def repeat_simulations(potential, positions, output_folder, nruns, fixed, max_st
     results_file = "Outputs/escape_times.txt"
     heading = f"Escape times for {os.path.basename(output_folder).replace('_', ' ')}"
     with open(results_file, "a") as file:
-        file.write(f"\n{'=' * 60}\n")
-        file.write(f"\"nEscape times (fs) for {heading}")
+        file.write(f"\nEscape times (fs) for {heading}")
         file.write(np.array2string(escape_times, separator=', ', max_line_width=80))
+        file.write("\n")
 
     print(f"\nEscape times saved to {results_file}")
 
