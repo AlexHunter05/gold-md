@@ -88,7 +88,6 @@ class AMDC:
     def md(self, nsteps=None, until_escape=False, max_steps=25000):
         # Automatically calculate escape radius
         if until_escape:
-            escape_radius = np.max(np.linalg.norm(self.positions, axis=1)) + 2.88
             nsteps = max_steps
 
         # Velocity Verlet algorithm
@@ -109,7 +108,10 @@ class AMDC:
                 self.therm -= kinetic(self.vel, self.masses, self.accel_conversion)
 
             self.steps += 1
-            escaped = until_escape and np.linalg.norm(self.positions[0]) > escape_radius
+
+            # Check whether the central atom has escaped
+            distances = np.linalg.norm(self.positions[1:] - self.positions[0], axis=1)
+            escaped = until_escape and np.all(distances > 2.88)
 
             # Record energies and trajectory
             if self.steps % self.stride == 0 or escaped:
