@@ -18,8 +18,11 @@ def run_escape_time(potential, positions, output_folder, seed, fixed, max_steps=
         escape_time = simulation.md(until_escape=True, max_steps=max_steps)
 
     os.makedirs(output_folder, exist_ok=True)
-    save_xyz(simulation, f"{output_folder}/simulation_{seed}")
-
+    sim_number = 1
+    while os.path.exists(f"{output_folder}/simulation_{sim_number}.xyz"):
+        sim_number += 1
+    save_xyz(simulation, f"{output_folder}/simulation_{sim_number}")
+    
     return simulation, escape_time
 
 
