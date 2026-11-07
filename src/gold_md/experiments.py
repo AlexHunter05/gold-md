@@ -36,11 +36,14 @@ def repeat_simulations(potential, positions, output_folder, nruns, fixed, max_st
     os.makedirs("Outputs", exist_ok=True)
     heading = f"Escape times for {os.path.basename(output_folder).replace('_', ' ')}"
 
+    print("REACHED SAVING SECTION")
+    print("Escape times:", escape_times)
+
     with open(results_file, "a") as file:
         file.write(f"\n{heading}\n")
         file.write(np.array2string(escape_times, separator=', ', max_line_width=80))
         file.write("\n")
 
-    print(f"\nEscape times saved to {os.path.abspath(results_file)}")
+    print("FINISHED SAVING SECTION")
 
     return escape_times
