@@ -17,22 +17,33 @@ def run_escape_time(potential, positions, output_folder, seed, fixed, max_steps=
     else:
         escape_time = simulation.md(until_escape=True, max_steps=max_steps)
 
-    os.makedirs(output_folder, exist_ok=True)
     sim_number = 1
     while os.path.exists(f"{output_folder}/simulation_{sim_number}.xyz"):
         sim_number += 1
     save_xyz(simulation, f"{output_folder}/simulation_{sim_number}")
-    
+
     return simulation, escape_time
 
 
 def repeat_simulations(potential, positions, output_folder, nruns, fixed, max_steps=None):
     escape_times = []
 
-    for seed in range(1, nruns + 1):
-        simulation, escape_time = run_escape_time(potential, positions, output_folder, seed, fixed, max_steps)
+    os.makedirs(output_folder, exist_ok=True)
+
+    # Find seeds already used
+    used_seeds = []
+    for filename in os.listdir(output_folder):
+        if filename.startswith("simulation_") and filename.endswith(".xyz"):
+            seed = int(filename.replace("simulation_", "").replace(".xyz", ""))
+            used_seeds.append(seed)
+
+    # Find next available seed
+    seed = max(used_seeds, default=0) + 1
+
+    for i in range(nruns):
+        simulation, escape_time = run_escape_time(potential, positions, output_folder, seed + i, fixed, max_steps)
         escape_times.append(escape_time)
-        print(f"Run {seed}/{nruns} complete. Escape time = {escape_time} fs")
+        print(f"Run {i+1}/{nruns} complete. Seed = {seed+i}, Escape time = {escape_time} fs")
 
     escape_times = np.array(escape_times)
 
