@@ -44,4 +44,4 @@ def repeat_simulations(potential, positions, output_folder, nruns, fixed, max_st
 
     print(f"\nEscape times saved to {results_file}")
 
-    return simulation, escape_times
+    return escape_times
