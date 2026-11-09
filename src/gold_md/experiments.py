@@ -48,7 +48,7 @@ def repeat_simulations(potential, positions, output_folder, nruns, fixed, max_st
     escape_times = np.array([np.nan if t is None else t for t in escape_times])
 
     # Save results to text file
-    results_file = "Outputs/escape_times.txt"
+    results_file = "Outputs/new_sims/escape_times_new.txt"
     heading = f"Escape times for {os.path.basename(output_folder).replace('_', ' ')}"
 
     with open(results_file, "a") as file:
