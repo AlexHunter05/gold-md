@@ -67,7 +67,7 @@ class AMDC:
     def apply_non_conservative_force(self, atoms):
         self.non_conservative_atoms[atoms] = 1
 
-    def non_conservative_force(self, K, centre):
+    def non_conservative_force(self, K):
         # Calculate centre of mass, excluding central atom
         centre_of_mass = np.average(self.positions[1:],axis=0,weights=self.masses[1:])
 
