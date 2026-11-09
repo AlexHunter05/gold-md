@@ -102,7 +102,7 @@ class AMDC:
             nsteps = max_steps
 
         # Velocity Verlet algorithm
-        for step in range(nsteps):
+        for _ in range(nsteps):
             if self.ensemble == "NVT":
                 self.therm += kinetic(self.vel, self.masses, self.accel_conversion)
                 self.vel = (self.vel * self.decay + self.random_factor * self.rng.normal(size=(self.natoms, 3))) * self.moving_atoms[:, None]

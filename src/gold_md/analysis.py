@@ -6,6 +6,7 @@ def get_time(my_md):
     print("\n")
     return np.arange(len(my_md.total_energies)) * my_md.stride * my_md.timestep
 
+
 def plot_energy_conservation(my_md):
     time = get_time(my_md)
     energy_change = np.array(my_md.total_energies) - my_md.total_energies[0]
@@ -18,6 +19,7 @@ def plot_energy_conservation(my_md):
     plt.grid(True)
     plt.show()
 
+
 def plot_PE(my_md):
     time = get_time(my_md)
 
@@ -28,6 +30,7 @@ def plot_PE(my_md):
     plt.title(f"Potential Energy for {my_md.natoms}-atom Gold Cluster")
     plt.grid(True)
     plt.show()
+
 
 def plot_KE(my_md, equilibration_steps=1000):
     time = get_time(my_md)
@@ -45,6 +48,7 @@ def plot_KE(my_md, equilibration_steps=1000):
     plt.title(f"Kinetic Energy for {my_md.natoms}-atom Gold Cluster")
     plt.grid(True)
     plt.show()
+
 
 def plot_temp(my_md, equilibration_steps=1000):
     time = get_time(my_md)
@@ -64,24 +68,51 @@ def plot_temp(my_md, equilibration_steps=1000):
     plt.grid(True)
     plt.show()
 
+
 def plot_displacement(my_md):
     time = get_time(my_md)
     trajectory = np.array(my_md.trajectory)
     centre_positions = trajectory[:, 0, :]
-    distances_squared = (np.linalg.norm(centre_positions, axis=1))**2
+    distances = np.linalg.norm(centre_positions, axis=1)
 
-    # plt.figure(figsize=(10, 5))
-    # plt.plot(time, distances)
-    # plt.xlabel("Time (fs)")
-    # plt.ylabel("Distance from centre (Å)")
-    # plt.title("Central Atom Displacement")
-    # plt.grid(True)
-    # plt.show()
+    plt.figure(figsize=(10, 5))
+    plt.plot(time, distances)
+    plt.xlabel("Time (fs)")
+    plt.ylabel("Distance from centre (Å)")
+    plt.title("Central Atom Displacement")
+    plt.grid(True)
+    plt.show()
+
+
+def plot_displacement_squared(my_md):
+    time = get_time(my_md)
+    trajectory = np.array(my_md.trajectory)
+    centre_positions = trajectory[:, 0, :]
+    distances_squared = (np.linalg.norm(centre_positions, axis=1))**2
 
     plt.figure(figsize=(10, 5))
     plt.plot(time, distances_squared)
     plt.xlabel("Time (fs)")
     plt.ylabel("Squared Displacement (Å²)")
     plt.title("Central Atom Squared Displacement")
+    plt.grid(True)
+    plt.show()
+
+
+def plot_azimuthal(my_md):
+    time = get_time(my_md)
+    trajectory = np.array(my_md.trajectory)
+    centre_positions = trajectory[:, 0, :]
+
+    x = centre_positions[:, 0]
+    y = centre_positions[:, 1]
+    angle = np.arctan2(y, x)
+    angle_degrees = np.degrees(angle)
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(time, angle_degrees)
+    plt.xlabel("Time (fs)")
+    plt.ylabel("Azimuthal Angle (degrees)")
+    plt.title("Central Atom Azimuthal Angle")
     plt.grid(True)
     plt.show()
