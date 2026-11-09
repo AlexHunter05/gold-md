@@ -68,12 +68,20 @@ def plot_displacement(my_md):
     time = get_time(my_md)
     trajectory = np.array(my_md.trajectory)
     centre_positions = trajectory[:, 0, :]
-    distances = np.linalg.norm(centre_positions, axis=1)
+    distances = (np.linalg.norm(centre_positions, axis=1))**2
+
+    # plt.figure(figsize=(10, 5))
+    # plt.plot(time, distances)
+    # plt.xlabel("Time (fs)")
+    # plt.ylabel("Distance from centre (Å)")
+    # plt.title("Central Atom Displacement")
+    # plt.grid(True)
+    # plt.show()
 
     plt.figure(figsize=(10, 5))
-    plt.plot(time, distances)
+    plt.plot(time, displacement_squared)
     plt.xlabel("Time (fs)")
-    plt.ylabel("Distance from centre (Å)")
-    plt.title("Central Atom Displacement")
+    plt.ylabel("Squared Displacement (Å²)")
+    plt.title("Central Atom Squared Displacement")
     plt.grid(True)
     plt.show()
