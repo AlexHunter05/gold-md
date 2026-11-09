@@ -53,7 +53,7 @@ def repeat_simulations(potential, positions, output_folder, nruns, fixed, max_st
 
 
 def save_result(simulation, natoms, fixed, seed, escape_time, max_steps):
-    results_file = "Outputs/Simulation results.csv"
+    results_file = Path("Outputs/Simulation results.csv")
 
     shells = {13: 2, 55: 3, 147: 4, 309: 5, 561: 6}
 
@@ -75,8 +75,6 @@ def save_result(simulation, natoms, fixed, seed, escape_time, max_steps):
 
     with open(results_file, "a", newline="") as file:
         writer = csv.DictWriter(file, fieldnames=result.keys())
-
         if not file_exists:
             writer.writeheader()
-
         writer.writerow(result)
