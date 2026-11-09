@@ -45,7 +45,7 @@ def repeat_simulations(potential, positions, output_folder, nruns, fixed, max_st
         escape_times.append(escape_time)
         print(f"Run {i+1}/{nruns} complete. Seed = {seed+i}, Escape time = {escape_time} fs")
 
-    escape_times = np.array(escape_times, dtype=int)
+    escape_times = np.array([np.nan if t is None else t for t in escape_times])
 
     # Save results to text file
     results_file = "Outputs/escape_times.txt"
