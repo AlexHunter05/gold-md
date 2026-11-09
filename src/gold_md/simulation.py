@@ -5,8 +5,8 @@ from .potential import potential, kinetic
 class AMDC:
     def __init__(self, eam_file, positions, ensemble="NVT", seed=42):
         # Load EAM potential
-        self.mass, self.cutoff, self.F_spline, self.density_spline, self.rphi_spline = load_eam(eam_file)
-
+        self.mass, self.cutoff, self.F_spline, self.density_spline, self.rphi_spline, self.F_derivative, self.density_derivative, self.rphi_derivative = load_eam(eam_file)
+        
         # Select ensemble
         self.ensemble = ensemble.upper()
         if self.ensemble not in ["NVE", "NVT"]:
@@ -33,6 +33,10 @@ class AMDC:
         self.K = 1.0
         self.centre = np.zeros(3)
         self.non_conservative_atoms = np.zeros(self.natoms)
+
+        # Compute escape threshold based on initial configuration
+        self.initial_distances = np.linalg.norm(self.positions[1:] - self.positions[0], axis=1)
+        self.escape_threshold = np.max(self.initial_distances)
 
         # Initial thermal velocities
         self.rng = np.random.default_rng(seed)
@@ -64,7 +68,10 @@ class AMDC:
         self.non_conservative_atoms[atoms] = 1
 
     def non_conservative_force(self, K, centre):
-        x0, y0, z0 = centre
+        # Calculate centre of mass, excluding central atom
+        centre_of_mass = np.average(self.positions[1:],axis=0,weights=self.masses[1:])
+
+        x0, y0, z0 = centre_of_mass
 
         forces = np.zeros((self.natoms, 3))
 
@@ -81,9 +88,13 @@ class AMDC:
             self.cutoff,
             self.F_spline,
             self.density_spline,
-            self.rphi_spline
-        )
-        self.forces += self.non_conservative_force(self.K, self.centre)
+            self.rphi_spline,
+            self.F_derivative,
+            self.density_derivative,
+            self.rphi_derivative)
+        
+        if np.any(self.non_conservative_atoms):
+            self.forces += self.non_conservative_force(self.K)
 
     def md(self, nsteps=None, until_escape=False, max_steps=25000):
         # Automatically calculate escape radius
@@ -110,8 +121,10 @@ class AMDC:
             self.steps += 1
 
             # Check whether the central atom has escaped
-            distances = np.linalg.norm(self.positions[1:] - self.positions[0], axis=1)
-            escaped = until_escape and np.all(distances > 2.88)
+            escaped = False
+            if until_escape:
+                distances = np.linalg.norm(self.positions[1:] - self.positions[0], axis=1)
+                escaped = np.all(distances > 1.2 * self.escape_threshold)
 
             # Record energies and trajectory
             if self.steps % self.stride == 0 or escaped:

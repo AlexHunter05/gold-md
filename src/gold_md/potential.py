@@ -1,60 +1,56 @@
 import numpy as np
 
-def potential(positions, cutoff, F_spline, density_spline, rphi_spline):
+def potential(positions, cutoff, F_spline, density_spline, rphi_spline, F_derivative, density_derivative, rphi_derivative):
     natoms = len(positions)
-
-    energy = 0.0
+  
     forces = np.zeros_like(positions)
     rho = np.zeros(natoms)
 
-    max_pairs = natoms * (natoms - 1) // 2
-    pairs = np.zeros((max_pairs, 5))
-    npairs = 0
+    # Get all unique atom pairs
+    i, j = np.triu_indices(natoms, k=1)
 
-    # Calculating the local electron density
-    for i in range(natoms):
-        for j in range(i+1, natoms):
+    # Calculate all separation vectors and distances
+    rij = positions[i] - positions[j]
+    r2 = np.sum(rij**2, axis=1)
 
-            # Separation vector from atom i to atom j
-            rij = positions[i] - positions[j]
-            r2 = np.sum(rij**2)
+    # Apply cutoff
+    mask = r2 < cutoff**2
 
-            if r2 < cutoff**2:
-                r = np.sqrt(r2)
-                pairs[npairs] = [i, j, rij[0], rij[1], rij[2]]
-                npairs += 1
+    i = i[mask]
+    j = j[mask]
+    rij = rij[mask]
+    r = np.sqrt(r2[mask])
 
-                density_contribution = density_spline(r)
-                rho[i] += density_contribution
-                rho[j] += density_contribution
+    # Calculate local electron densities
+    density = density_spline(r)
 
-    # Calculating the embedding energy
-    embedding_derivatives = np.zeros(natoms)
+    np.add.at(rho, i, density)
+    np.add.at(rho, j, density)
 
-    for i in range(natoms):
-        energy += F_spline(rho[i])
-        embedding_derivatives[i] = F_spline.derivative()(rho[i])
+    # Calculate embedding energy and derivatives
+    embedding_energy = np.sum(F_spline(rho))
+    embedding_derivatives = F_derivative(rho)
 
-    # Calculate pair energy and forces
-    for k in range(npairs):
-        i = int(pairs[k, 0])
-        j = int(pairs[k, 1])
-        rij = positions[i] - positions[j]
-        r = np.sqrt(np.sum(rij**2))
+    # Calculate pair energy
+    rphi = rphi_spline(r)
+    phi = rphi / r
 
-        rphi = rphi_spline(r)
-        phi = rphi / r
-        dphi = rphi_spline.derivative()(r) / r - rphi / r**2
-        energy += phi
+    pair_energy = np.sum(phi)
 
-        # Calculate the embedding contribution to the force
-        drho = density_spline.derivative()(r)
-        dEdr = (embedding_derivatives[i] + embedding_derivatives[j]) * drho + dphi
-        fij = -dEdr * rij / r
+    # Calculate force derivatives
+    dphi = rphi_derivative(r) / r - rphi / r**2
+    drho = density_derivative(r)
 
-        # Forces on the two atoms are equal and opposite
-        forces[i] += fij
-        forces[j] -= fij
+    dEdr = (embedding_derivatives[i] + embedding_derivatives[j]) * drho + dphi
+
+    # Calculate pair forces
+    fij = -dEdr[:, None] * rij / r[:, None]
+
+    np.add.at(forces, i, fij)
+    np.add.at(forces, j, -fij)
+
+    # Total potential energy
+    energy = embedding_energy + pair_energy
 
     return energy, forces
 

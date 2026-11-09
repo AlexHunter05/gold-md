@@ -55,4 +55,8 @@ def load_eam(filename):
     density_spline = CubicSpline(r_grid, density_values)
     rphi_spline = CubicSpline(r_grid, rphi_values)
 
-    return mass, cutoff, F_spline, density_spline, rphi_spline
+    F_derivative = F_spline.derivative()
+    density_derivative = density_spline.derivative()
+    rphi_derivative = rphi_spline.derivative()
+
+    return mass, cutoff, F_spline, density_spline, rphi_spline, F_derivative, density_derivative, rphi_derivative
