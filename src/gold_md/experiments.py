@@ -2,6 +2,9 @@ import numpy as np
 import os
 from .simulation import AMDC
 from .trajectory import save_xyz
+import csv
+from pathlib import Path
+from datetime import datetime, timezone
 
 
 def run_escape_time(potential, positions, output_folder, seed, fixed, max_steps=None):
@@ -41,21 +44,38 @@ def repeat_simulations(potential, positions, output_folder, nruns, fixed, max_st
     seed = max(used_seeds, default=0) + 1
 
     for i in range(nruns):
-        simulation, escape_time = run_escape_time(potential, positions, output_folder, seed + i, fixed, max_steps)
-        escape_times.append(escape_time)
-        print(f"Run {i+1}/{nruns} complete. Seed = {seed+i}, Escape time = {escape_time} fs")
+        current_seed = seed + i
+        simulation, escape_time = run_escape_time(potential, positions, output_folder, current_seed, fixed, max_steps)
+        save_result(simulation, len(positions), fixed, current_seed, escape_time,max_steps)
+        print(f"Run {i+1}/{nruns} complete. Seed = {current_seed}, Escape time = {escape_time} fs")
 
-    escape_times = np.array([np.nan if t is None else t for t in escape_times])
+    return simulation
 
-    # Save results to text file
-    results_file = "Outputs/new_sims/escape_times_new.txt"
-    heading = f"Escape times for {os.path.basename(output_folder).replace('_', ' ')}"
 
-    with open(results_file, "a") as file:
-        file.write(f"\n{heading}\n")
-        file.write(np.array2string(escape_times, separator=', ', max_line_width=80))
-        file.write("\n")
+def save_result(simulation, natoms, fixed, seed, escape_time, max_steps):
+    results_file = "Outputs/Simulation results.csv"
 
-    print(f"\nEscape times saved to {results_file}")
+    shells = {13: 2, 55: 3, 147: 4, 309: 5, 561: 6}
 
-    return simulation, escape_times
+    result = {
+        "date": datetime.now(timezone.utc).isoformat(),
+        "natoms": natoms,
+        "shells": shells.get(natoms),
+        "fixed": fixed,
+        "seed": seed,
+        "escape_time_fs": escape_time,
+        "max_steps": max_steps,
+        "temperature": simulation.temperature,
+        "force_constant": simulation.K,
+        "ensemble": simulation.ensemble
+    }
+
+    file_exists = results_file.exists() and results_file.stat().st_size > 0
+
+    with open(results_file, "a", newline="") as file:
+        writer = csv.DictWriter(file, fieldnames=result.keys())
+
+        if not file_exists:
+            writer.writeheader()
+
+        writer.writerow(result)
