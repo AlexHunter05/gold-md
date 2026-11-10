@@ -36,7 +36,7 @@ class AMDC:
 
         # Compute escape threshold based on initial configuration
         self.initial_distances = np.linalg.norm(self.positions[1:] - self.positions[0], axis=1)
-        self.escape_threshold = np.max(self.initial_distances)
+        self.escape_threshold = 1.2 * np.min(self.initial_distances)
 
         # Initial thermal velocities
         self.rng = np.random.default_rng(seed)
@@ -66,6 +66,7 @@ class AMDC:
 
     def apply_non_conservative_force(self, atoms):
         self.non_conservative_atoms[atoms] = 1
+        self.calculate_forces()
 
     def non_conservative_force(self, K):
         # Calculate centre of mass, excluding central atom
@@ -124,7 +125,7 @@ class AMDC:
             escaped = False
             if until_escape:
                 distances = np.linalg.norm(self.positions[1:] - self.positions[0], axis=1)
-                escaped = np.all(distances > 1.2 * self.escape_threshold)
+                escaped = np.all(distances > self.escape_threshold)
 
             # Record energies and trajectory
             if self.steps % self.stride == 0 or escaped:
