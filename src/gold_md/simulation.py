@@ -117,6 +117,7 @@ class AMDC:
         if trajectory_file is not None:
             os.makedirs(os.path.dirname(trajectory_file) or ".", exist_ok=True)
             xyz_file = open(trajectory_file, "w")
+            trajectory_file = os.path.join("Outputs", f"{trajectory_file}.xyz")
             self.write_xyz_frame(xyz_file)
             last_saved_step = self.steps
 
