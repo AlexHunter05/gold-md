@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from .load_eam import load_eam
 from .potential import potential, kinetic
@@ -55,7 +56,6 @@ class AMDC:
         # Initial forces and energy
         self.calculate_forces()
 
-        self.trajectory = []
         self.potential_energies = []
         self.kinetic_energies = []
         self.total_energies = []
@@ -103,72 +103,68 @@ class AMDC:
         for position in self.positions:
             file.write(f"Au {position[0]:.8f} {position[1]:.8f} {position[2]:.8f}\n")
 
-    def md(self, until_escape=False, max_steps=100000, trajectory_file=None):
+def md(self, trajectory_file, until_escape=False, max_steps=100000):
 
-        # Automatically calculate escape radius
-        if until_escape:
-            nsteps = max_steps
+    # Open trajectory file if a filename is provided
+    xyz_file = None
+    last_saved_step = None
 
-        # Open trajectory file and record initial configuration
-        if trajectory_file is not None:
-            xyz_file = open(trajectory_file, "w")
+    if trajectory_file is not None:
+        os.makedirs(os.path.dirname(trajectory_file) or ".", exist_ok=True)
+        xyz_file = open(trajectory_file, "w")
+        self.write_xyz_frame(xyz_file)
+        last_saved_step = self.steps
+
+    escaped = False
+
+    try:
+        # Velocity Verlet algorithm
+        for _ in range(max_steps):
+            if self.ensemble == "NVT":
+                self.therm += kinetic(self.vel, self.masses, self.accel_conversion)
+                self.vel = (self.vel * self.decay + self.random_factor * self.rng.normal(size=(self.natoms, 3))) * self.moving_atoms[:, None]
+                self.therm -= kinetic(self.vel, self.masses, self.accel_conversion)
+
+            self.vel += (0.5 * self.accel_conversion * self.forces / self.masses[:, None] * self.timestep) * self.moving_atoms[:, None]
+            self.positions += self.vel * self.timestep * self.moving_atoms[:, None]
+            self.calculate_forces()
+            self.vel += (0.5 * self.accel_conversion * self.forces / self.masses[:, None] * self.timestep) * self.moving_atoms[:, None]
+
+            if self.ensemble == "NVT":
+                self.therm += kinetic(self.vel, self.masses, self.accel_conversion)
+                self.vel = (self.vel * self.decay + self.random_factor * self.rng.normal(size=(self.natoms, 3))) * self.moving_atoms[:, None]
+                self.therm -= kinetic(self.vel, self.masses, self.accel_conversion)
+
+            self.steps += 1
+
+            # Check whether the central atom has escaped
+            if until_escape:
+                distances = np.linalg.norm(self.positions[1:] - self.positions[0], axis=1)
+                escaped = np.all(distances > self.escape_threshold)
+
+            # Record energies and trajectory
+            if self.steps % self.stride == 0 or escaped:
+                KE = kinetic(self.vel, self.masses, self.accel_conversion)
+                self.potential_energies.append(self.eng)
+                self.kinetic_energies.append(KE)
+                self.total_energies.append(self.eng + KE + self.therm)
+
+                if xyz_file is not None and self.steps != last_saved_step:
+                    self.write_xyz_frame(xyz_file)
+                    last_saved_step = self.steps
+
+            if escaped:
+                break
+
+        # Record final configuration if it has not already been saved
+        if xyz_file is not None and self.steps != last_saved_step:
             self.write_xyz_frame(xyz_file)
-            last_saved_step = self.steps
 
-        try:
-            # Velocity Verlet algorithm
-            for _ in range(nsteps):
-                if self.ensemble == "NVT":
-                    self.therm += kinetic(self.vel, self.masses, self.accel_conversion)
-                    self.vel = (self.vel * self.decay + self.random_factor * self.rng.normal(size=(self.natoms, 3))) * self.moving_atoms[:, None]
-                    self.therm -= kinetic(self.vel, self.masses, self.accel_conversion)
+    finally:
+        if xyz_file is not None:
+            xyz_file.close()
 
-                self.vel += (0.5 * self.accel_conversion * self.forces / self.masses[:, None] * self.timestep) * self.moving_atoms[:, None]
-                self.positions += self.vel * self.timestep * self.moving_atoms[:, None]
-                self.calculate_forces()
-                self.vel += (0.5 * self.accel_conversion * self.forces / self.masses[:, None] * self.timestep) * self.moving_atoms[:, None]
+    if escaped:
+        return self.steps * self.timestep
 
-                if self.ensemble == "NVT":
-                    self.therm += kinetic(self.vel, self.masses, self.accel_conversion)
-                    self.vel = (self.vel * self.decay + self.random_factor * self.rng.normal(size=(self.natoms, 3))) * self.moving_atoms[:, None]
-                    self.therm -= kinetic(self.vel, self.masses, self.accel_conversion)
-
-                self.steps += 1
-
-                # Check whether the central atom has escaped
-                escaped = False
-                if until_escape:
-                    distances = np.linalg.norm(self.positions[1:] - self.positions[0], axis=1)
-                    escaped = np.all(distances > self.escape_threshold)
-
-                # Record energies and trajectory
-                if self.steps % self.stride == 0 or escaped:
-                    if trajectory_file is None:
-                        self.trajectory.append(self.positions.copy())
-                    elif self.steps != last_saved_step:
-                        self.write_xyz_frame(xyz_file)
-                        last_saved_step = self.steps
-
-                    KE = kinetic(self.vel, self.masses, self.accel_conversion)
-                    self.potential_energies.append(self.eng)
-                    self.kinetic_energies.append(KE)
-                    self.total_energies.append(self.eng + KE + self.therm)
-
-                if escaped:
-                    escape_time = self.steps * self.timestep
-                    break
-
-            # Record final configuration if it wasn't already saved
-            if trajectory_file is not None and self.steps != last_saved_step:
-                self.write_xyz_frame(xyz_file)
-
-        finally:
-            # Always close the trajectory file
-            if trajectory_file is not None:
-                xyz_file.close()
-
-        # Return escape time if the central atom escaped
-        if until_escape and escaped:
-            return escape_time
-
-        return None
+    return None
