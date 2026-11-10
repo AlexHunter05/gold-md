@@ -36,7 +36,7 @@ class AMDC:
 
         # Compute escape threshold based on initial configuration
         self.initial_distances = np.linalg.norm(self.positions[1:] - self.positions[0], axis=1)
-        self.escape_threshold = 1.2 * np.min(self.initial_distances)
+        self.escape_threshold = 1.1 * np.min(self.initial_distances)
 
         # Initial thermal velocities
         self.rng = np.random.default_rng(seed)
