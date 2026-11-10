@@ -15,15 +15,18 @@ def run_escape_time(potential, positions, output_folder, seed, fixed, max_steps=
         simulation.fix_atoms(range(1, natoms))
     simulation.apply_non_conservative_force(0)
 
-    if max_steps is None:
-        escape_time = simulation.md(until_escape=True)
-    else:
-        escape_time = simulation.md(until_escape=True, max_steps=max_steps)
-
     sim_number = 1
     while os.path.exists(f"{output_folder}/simulation_{sim_number}.xyz"):
         sim_number += 1
-    save_xyz(simulation, f"{output_folder}/simulation_{sim_number}")
+
+    trajectory_file = f"{output_folder}/simulation_{sim_number}.xyz"
+
+    if max_steps is None:
+        escape_time = simulation.md(until_escape=True, trajectory_file=trajectory_file)
+    else:
+        escape_time = simulation.md(until_escape=True, max_steps=max_steps, trajectory_file=trajectory_file)
+
+    print(f"Saved trajectory to {trajectory_file}")
 
     return simulation, escape_time
 
