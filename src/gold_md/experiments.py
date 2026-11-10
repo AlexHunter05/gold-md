@@ -49,7 +49,7 @@ def repeat_simulations(potential, positions, output_folder, nruns, fixed, max_st
         current_seed = seed + i
         simulation, escape_time = run_escape_time(potential, positions, output_folder, current_seed, fixed, max_steps)
         save_result(simulation, len(positions), fixed, current_seed, escape_time, max_steps)
-        print(f"Run {i+1}/{nruns} complete,     Seed = {current_seed},  Escape time = {escape_time} fs")
+        print(f"Run {i+1}/{nruns} complete,   Seed = {current_seed},   Escape time = {escape_time} fs")
 
     return simulation
 
