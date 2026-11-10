@@ -103,7 +103,12 @@ class AMDC:
         for position in self.positions:
             file.write(f"Au {position[0]:.8f} {position[1]:.8f} {position[2]:.8f}\n")
 
-def md(self, trajectory_file, until_escape=False, max_steps=100000):
+def md(self, nsteps=None, trajectory_file=None, until_escape=False, max_steps=100000):
+
+    if until_escape:
+        nsteps = max_steps
+    elif nsteps is None:
+        raise ValueError("Specify number of steps or set until_escape=True")
 
     # Open trajectory file if a filename is provided
     xyz_file = None
@@ -119,7 +124,7 @@ def md(self, trajectory_file, until_escape=False, max_steps=100000):
 
     try:
         # Velocity Verlet algorithm
-        for _ in range(max_steps):
+        for _ in range(nsteps):
             if self.ensemble == "NVT":
                 self.therm += kinetic(self.vel, self.masses, self.accel_conversion)
                 self.vel = (self.vel * self.decay + self.random_factor * self.rng.normal(size=(self.natoms, 3))) * self.moving_atoms[:, None]
