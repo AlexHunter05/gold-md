@@ -117,3 +117,41 @@ def plot_azimuthal(my_md):
     plt.title("Central Atom Azimuthal Angle")
     plt.grid(True)
     plt.show()
+
+
+def plot_radial_distance(my_md):
+    time = get_time(my_md)
+    trajectory = np.array(my_md.trajectory)
+    centre_positions = trajectory[:, 0, :]
+
+    x = centre_positions[:, 0]
+    y = centre_positions[:, 1]
+    radial_distance = np.sqrt(x**2 + y**2)
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(time, radial_distance)
+    plt.xlabel("Time (fs)")
+    plt.ylabel("Radial Distance (Å)")
+    plt.title("Central Atom Radial Distance")
+    plt.grid(True)
+    plt.show()
+
+
+def plot_angular_velocity(my_md):
+    time = get_time(my_md)
+    trajectory = np.array(my_md.trajectory)
+    centre_positions = trajectory[:, 0, :]
+
+    x = centre_positions[:, 0]
+    y = centre_positions[:, 1]
+    angle = np.unwrap(np.arctan2(y, x))
+    angular_velocity = np.gradient(angle, time)
+    angular_velocity_degrees = np.degrees(angular_velocity)
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(time, angular_velocity_degrees)
+    plt.xlabel("Time (fs)")
+    plt.ylabel("Angular Velocity (degrees/fs)")
+    plt.title("Central Atom Angular Velocity")
+    plt.grid(True)
+    plt.show()
