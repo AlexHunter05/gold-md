@@ -75,9 +75,9 @@ def plot_temp(simulation, equilibration_steps=1000):
     plt.show()
 
 
-def plot_displacement(simulation, trajectory_file):
-    time = np.arange(len(get_trajectory(trajectory_file))) * simulation.stride * simulation.timestep
-    trajectory = get_trajectory(trajectory_file)
+def plot_displacement(simulation):
+    time = np.arange(len(get_trajectory(simulation))) * simulation.stride * simulation.timestep
+    trajectory = get_trajectory(simulation)
     centre_positions = trajectory[:, 0, :]
     distances = np.linalg.norm(centre_positions, axis=1)
 
@@ -91,9 +91,9 @@ def plot_displacement(simulation, trajectory_file):
     plt.show()
 
 
-def plot_displacement_squared(simulation, trajectory_file):
-    time = np.arange(len(get_trajectory(trajectory_file))) * simulation.stride * simulation.timestep
-    trajectory = get_trajectory(trajectory_file)
+def plot_displacement_squared(simulation):
+    time = np.arange(len(get_trajectory(simulation))) * simulation.stride * simulation.timestep
+    trajectory = get_trajectory(simulation)
     centre_positions = trajectory[:, 0, :]
     distances_squared = (np.linalg.norm(centre_positions, axis=1))**2
 
@@ -106,9 +106,9 @@ def plot_displacement_squared(simulation, trajectory_file):
     plt.show()
 
 
-def plot_azimuthal(simulation, trajectory_file):
-    time = np.arange(len(get_trajectory(trajectory_file))) * simulation.stride * simulation.timestep
-    trajectory = get_trajectory(trajectory_file)
+def plot_azimuthal(simulation):
+    time = np.arange(len(get_trajectory(simulation))) * simulation.stride * simulation.timestep
+    trajectory = get_trajectory(simulation)
     centre_positions = trajectory[:, 0, :]
 
     x = centre_positions[:, 0]
@@ -125,9 +125,9 @@ def plot_azimuthal(simulation, trajectory_file):
     plt.show()
 
 
-def plot_radial_distance(simulation, trajectory_file):
-    time = np.arange(len(get_trajectory(trajectory_file))) * simulation.stride * simulation.timestep
-    trajectory = get_trajectory(trajectory_file)
+def plot_radial_distance(simulation):
+    time = np.arange(len(get_trajectory(simulation))) * simulation.stride * simulation.timestep
+    trajectory = get_trajectory(simulation)
     centre_positions = trajectory[:, 0, :]
 
     x = centre_positions[:, 0]
@@ -143,9 +143,9 @@ def plot_radial_distance(simulation, trajectory_file):
     plt.show()
 
 
-def plot_angular_velocity(simulation, trajectory_file):
-    time = np.arange(len(get_trajectory(trajectory_file))) * simulation.stride * simulation.timestep
-    trajectory = get_trajectory(trajectory_file)
+def plot_angular_velocity(simulation):
+    time = np.arange(len(get_trajectory(simulation))) * simulation.stride * simulation.timestep
+    trajectory = get_trajectory(simulation)
     centre_positions = trajectory[:, 0, :]
 
     x = centre_positions[:, 0]
