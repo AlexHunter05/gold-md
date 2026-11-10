@@ -111,7 +111,7 @@ class AMDC:
 
             # Check whether the central atom has escaped
             distances = np.linalg.norm(self.positions[1:] - self.positions[0], axis=1)
-            escaped = until_escape and np.all(distances > 2.88)
+            escaped = until_escape and np.all(distances > 2.9245931)
 
             # Record energies and trajectory
             if self.steps % self.stride == 0 or escaped:
