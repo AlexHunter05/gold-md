@@ -112,11 +112,13 @@ class AMDC:
 
         # Open trajectory file if a filename is provided
         xyz_file = None
+        self.trajectory_file = None
         last_saved_step = None
 
         if trajectory_file is not None:
             os.makedirs("Outputs", exist_ok=True)
             trajectory_file = os.path.join("Outputs", f"{trajectory_file}.xyz")
+            self.trajectory_file = trajectory_file
             xyz_file = open(trajectory_file, "w")
             self.write_xyz_frame(xyz_file)
             last_saved_step = self.steps

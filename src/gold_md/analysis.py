@@ -8,8 +8,8 @@ def get_time(simulation):
     return np.arange(len(simulation.total_energies)) * simulation.stride * simulation.timestep
 
 
-def get_trajectory(trajectory_file):
-    trajectory = read(trajectory_file, index=":")
+def get_trajectory(simulation):
+    trajectory = read(simulation.trajectory_file, index=":")
     return np.array([atoms.get_positions() for atoms in trajectory])
 
 
