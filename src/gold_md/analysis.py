@@ -76,7 +76,8 @@ def plot_displacement(my_md):
     distances = np.linalg.norm(centre_positions, axis=1)
 
     plt.figure(figsize=(10, 5))
-    plt.plot(time, distances)
+    plt.plot(time, distances, label="Central atom displacement")
+    plt.axhline(y=my_md.escape_threshold, color="red", linestyle="--", label="Escape threshold")
     plt.xlabel("Time (fs)")
     plt.ylabel("Distance from centre (Å)")
     plt.title("Central Atom Displacement")
