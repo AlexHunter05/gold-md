@@ -19,7 +19,7 @@ def run_escape_time(potential, positions, output_folder, seed, fixed, max_steps=
     while os.path.exists(f"Outputs/{output_folder}/simulation_{sim_number}"):
         sim_number += 1
 
-    trajectory_file = f"Outputs/{output_folder}/simulation_{sim_number}"
+    trajectory_file = f"{output_folder}/simulation_{sim_number}"
 
     if max_steps is None:
         escape_time = simulation.md(trajectory_file, until_escape=True)
