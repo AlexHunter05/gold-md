@@ -15,11 +15,7 @@ def run_escape_time(potential, positions, output_folder, seed, fixed, max_steps=
         simulation.fix_atoms(range(1, natoms))
     simulation.apply_non_conservative_force(0)
 
-    sim_number = 1
-    while os.path.exists(f"{output_folder}/simulation_{sim_number}.xyz"):
-        sim_number += 1
-
-    trajectory_file = f"{output_folder}/simulation_{sim_number}"
+    trajectory_file = f"{output_folder}/simulation_{seed}"
 
     if max_steps is None:
         escape_time = simulation.md(trajectory_file=trajectory_file, until_escape=True)
@@ -35,18 +31,13 @@ def repeat_simulations(potential, positions, output_folder, nruns, fixed, max_st
 
     os.makedirs(f"{output_folder}", exist_ok=True)
 
-    # Find seeds already used
-    used_seeds = []
-    for filename in os.listdir(f"{output_folder}"):
-        if filename.startswith("simulation_") and filename.endswith(".xyz"):
-            seed = int(filename.replace("simulation_", "").replace(".xyz", ""))
-            used_seeds.append(seed)
-
-    # Find next available seed
-    seed = max(used_seeds, default=0) + 1
-
     for i in range(nruns):
-        current_seed = seed + i
+        # Find lowest available simulation number
+        sim_number = 1
+        while os.path.exists(f"{output_folder}/simulation_{sim_number}.xyz"):
+            sim_number += 1
+
+        current_seed = sim_number
         simulation, escape_time = run_escape_time(potential, positions, output_folder, current_seed, fixed, max_steps)
         save_result(simulation, len(positions), fixed, current_seed, escape_time, max_steps)
         print(f"Run {i+1}/{nruns} complete,   Seed = {current_seed},   Escape time = {escape_time} fs")
