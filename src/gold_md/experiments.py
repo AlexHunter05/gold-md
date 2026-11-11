@@ -16,10 +16,10 @@ def run_escape_time(potential, positions, output_folder, seed, fixed, max_steps=
     simulation.apply_non_conservative_force(0)
 
     sim_number = 1
-    while os.path.exists(f"{output_folder}/simulation_{sim_number}"):
+    while os.path.exists(f"Outputs/{output_folder}/simulation_{sim_number}"):
         sim_number += 1
 
-    trajectory_file = f"{output_folder}/simulation_{sim_number}"
+    trajectory_file = f"Outputs/{output_folder}/simulation_{sim_number}"
 
     if max_steps is None:
         escape_time = simulation.md(trajectory_file, until_escape=True)
@@ -33,11 +33,11 @@ def run_escape_time(potential, positions, output_folder, seed, fixed, max_steps=
 
 def repeat_simulations(potential, positions, output_folder, nruns, fixed, max_steps=None):
 
-    os.makedirs(output_folder, exist_ok=True)
+    os.makedirs(f"Outputs/{output_folder}", exist_ok=True)
 
     # Find seeds already used
     used_seeds = []
-    for filename in os.listdir(output_folder):
+    for filename in os.listdir(f"Outputs/{output_folder}"):
         if filename.startswith("simulation_") and filename.endswith(".xyz"):
             seed = int(filename.replace("simulation_", "").replace(".xyz", ""))
             used_seeds.append(seed)
