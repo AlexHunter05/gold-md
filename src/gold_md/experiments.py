@@ -10,23 +10,23 @@ from datetime import datetime, timezone
 def run_escape_time(potential, positions, output_folder, seed, fixed, max_steps=None):
     simulation = AMDC(potential, positions, "NVE", seed=seed)
     natoms = len(positions)
-    print(f"Output folder: {output_folder}")
+
     if fixed:
         simulation.fix_atoms(range(1, natoms))
     simulation.apply_non_conservative_force(0)
 
     sim_number = 1
-    while os.path.exists(f"{output_folder}/simulation_{sim_number}"):
+    while os.path.exists(f"{output_folder}/simulation_{sim_number}.xyz"):
         sim_number += 1
 
     trajectory_file = f"{output_folder}/simulation_{sim_number}"
 
     if max_steps is None:
-        escape_time = simulation.md(trajectory_file, until_escape=True)
+        escape_time = simulation.md(trajectory_file=trajectory_file, until_escape=True)
     else:
-        escape_time = simulation.md(trajectory_file, until_escape=True, max_steps=max_steps)
+        escape_time = simulation.md(trajectory_file=trajectory_file, until_escape=True, max_steps=max_steps)
 
-    print(f"Saved trajectory to {trajectory_file}")
+    print(f"Saved trajectory to {simulation.trajectory_file}")
 
     return simulation, escape_time
 
