@@ -16,10 +16,10 @@ def run_escape_time(potential, positions, output_folder, seed, fixed, max_steps=
     simulation.apply_non_conservative_force(0)
 
     sim_number = 1
-    while os.path.exists(f"{output_folder}/simulation_{sim_number}.xyz"):
+    while os.path.exists(f"{output_folder}/simulation_{sim_number}"):
         sim_number += 1
 
-    trajectory_file = f"{output_folder}/simulation_{sim_number}.xyz"
+    trajectory_file = f"{output_folder}/simulation_{sim_number}"
 
     if max_steps is None:
         escape_time = simulation.md(trajectory_file, until_escape=True)

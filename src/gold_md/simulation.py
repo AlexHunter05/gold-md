@@ -116,10 +116,7 @@ class AMDC:
         last_saved_step = None
 
         if trajectory_file is not None:
-            if not trajectory_file.startswith("Outputs"):
-                trajectory_file = os.path.join("Outputs", trajectory_file)
-            if not trajectory_file.endswith(".xyz"):
-                trajectory_file += ".xyz"
+            trajectory_file = f"Outputs/{trajectory_file}.xyz"
             os.makedirs(os.path.dirname(trajectory_file), exist_ok=True)
             self.trajectory_file = trajectory_file
             xyz_file = open(trajectory_file, "w")
