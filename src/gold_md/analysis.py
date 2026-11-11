@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from ase.io import read
+from types import SimpleNamespace
 
 # Time axis (fs)
 def get_time(simulation):
@@ -11,6 +12,16 @@ def get_time(simulation):
 def get_trajectory(simulation):
     trajectory = read(simulation.trajectory_file, index=":")
     return np.array([atoms.get_positions() for atoms in trajectory])
+
+
+def load_simulation(filename, stride=10, timestep=1.0):
+    positions = np.array([atoms.get_positions() for atoms in read(filename, index=":")])
+    simulation = SimpleNamespace()
+    simulation.trajectory_file = filename
+    simulation.stride = stride
+    simulation.timestep = timestep
+    simulation.escape_threshold = 1.1 * np.min(np.linalg.norm(positions[0, 1:] - positions[0, 0], axis=1))
+    return simulation
 
 
 def plot_energy_conservation(simulation):
