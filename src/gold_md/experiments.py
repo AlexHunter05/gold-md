@@ -1,7 +1,6 @@
 import numpy as np
 import os
 from .simulation import AMDC
-from .trajectory import save_xyz
 import csv
 from pathlib import Path
 from datetime import datetime, timezone
