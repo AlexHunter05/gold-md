@@ -116,12 +116,9 @@ class AMDC:
         last_saved_step = None
 
         if trajectory_file is not None:
-            print(f"Saving trajectory to {trajectory_file}\n")
-            trajectory_file = f"{trajectory_file}.xyz"
-            print(f"Saving trajectory to {trajectory_file}\n")
-            os.makedirs(os.path.dirname(trajectory_file), exist_ok=True)
-            self.trajectory_file = trajectory_file
-            xyz_file = open(trajectory_file, "w")
+            self.trajectory_file = f"{trajectory_file}.xyz"
+            os.makedirs(os.path.dirname(self.trajectory_file), exist_ok=True)
+            xyz_file = open(self.trajectory_file, "w")
             self.write_xyz_frame(xyz_file)
             last_saved_step = self.steps
 
