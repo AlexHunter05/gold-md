@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 def run_escape_time(potential, positions, output_folder, seed, fixed, max_steps=None):
     simulation = AMDC(potential, positions, "NVE", seed=seed)
     natoms = len(positions)
-
+    print(f"Output folder: {output_folder}")
     if fixed:
         simulation.fix_atoms(range(1, natoms))
     simulation.apply_non_conservative_force(0)
