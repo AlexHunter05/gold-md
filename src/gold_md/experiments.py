@@ -21,8 +21,6 @@ def run_escape_time(potential, positions, output_folder, seed, fixed, max_steps=
     else:
         escape_time = simulation.md(trajectory_file=trajectory_file, until_escape=True, max_steps=max_steps)
 
-    print(f"Saved trajectory to {simulation.trajectory_file}")
-
     return simulation, escape_time
 
 

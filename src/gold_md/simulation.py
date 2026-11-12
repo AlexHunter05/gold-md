@@ -193,6 +193,7 @@ class AMDC:
         finally:
             if xyz_file is not None:
                 xyz_file.close()
+                print(f"Saved trajectory to {self.trajectory_file}")
 
         if escaped:
             return self.steps * self.timestep
