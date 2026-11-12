@@ -99,6 +99,7 @@ def plot_displacement(simulation):
     plt.ylabel("Distance from centre (Å)")
     plt.title("Central Atom Displacement")
     plt.grid(True)
+    plt.legend()
     plt.show()
 
 
