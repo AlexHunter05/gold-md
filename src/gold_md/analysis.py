@@ -14,6 +14,10 @@ def get_trajectory(simulation):
     return np.array([atoms.get_positions() for atoms in trajectory])
 
 
+def moving_average(data, window_size=10):
+    return np.array([np.mean(data[i:i + window_size], axis=0) for i in range(len(data) - window_size + 1)])
+
+
 def load_simulation(filename, stride=10, timestep=1.0):
     positions = np.array([atoms.get_positions() for atoms in read(filename, index=":")])
     simulation = SimpleNamespace()
@@ -86,28 +90,32 @@ def plot_temp(simulation, equilibration_steps=1000):
     plt.show()
 
 
-def plot_displacement(simulation):
+def plot_displacement(simulation, window_size=10):
     time = np.arange(len(get_trajectory(simulation))) * simulation.stride * simulation.timestep
     trajectory = get_trajectory(simulation)
-    centre_positions = trajectory[:, 0, :]
+
+    centre_positions = moving_average(trajectory[:, 0, :], window_size)
     distances = np.linalg.norm(centre_positions, axis=1)
+    time = time[:len(centre_positions)]
 
     plt.figure(figsize=(10, 5))
-    plt.plot(time, distances, label="Central atom displacement")
+    plt.plot(time, distances, label="Smoothed central atom displacement")
     plt.axhline(y=simulation.escape_threshold, color="red", linestyle="--", label="Escape threshold")
     plt.xlabel("Time (fs)")
     plt.ylabel("Distance from centre (Å)")
     plt.title("Central Atom Displacement")
-    plt.grid(True)
     plt.legend()
+    plt.grid(True)
     plt.show()
 
 
-def plot_displacement_squared(simulation):
+def plot_displacement_squared(simulation, window_size=10):
     time = np.arange(len(get_trajectory(simulation))) * simulation.stride * simulation.timestep
     trajectory = get_trajectory(simulation)
-    centre_positions = trajectory[:, 0, :]
+
+    centre_positions = moving_average(trajectory[:, 0, :], window_size)
     distances_squared = (np.linalg.norm(centre_positions, axis=1))**2
+    time = time[:len(centre_positions)]
 
     plt.figure(figsize=(10, 5))
     plt.plot(time, distances_squared)
@@ -118,10 +126,30 @@ def plot_displacement_squared(simulation):
     plt.show()
 
 
-def plot_azimuthal(simulation):
+def plot_radial_distance(simulation, window_size=10):
     time = np.arange(len(get_trajectory(simulation))) * simulation.stride * simulation.timestep
     trajectory = get_trajectory(simulation)
-    centre_positions = trajectory[:, 0, :]
+    centre_positions = moving_average(trajectory[:, 0, :], window_size)
+    time = time[:len(centre_positions)]
+
+    x = centre_positions[:, 0]
+    y = centre_positions[:, 1]
+    radial_distance = np.sqrt(x**2 + y**2)
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(time, radial_distance)
+    plt.xlabel("Time (fs)")
+    plt.ylabel("Radial Distance (Å)")
+    plt.title("Central Atom Radial Distance")
+    plt.grid(True)
+    plt.show()
+
+
+def plot_azimuthal(simulation, window_size=10):
+    time = np.arange(len(get_trajectory(simulation))) * simulation.stride * simulation.timestep
+    trajectory = get_trajectory(simulation)
+    centre_positions = moving_average(trajectory[:, 0, :], window_size)
+    time = time[:len(centre_positions)]
 
     x = centre_positions[:, 0]
     y = centre_positions[:, 1]
@@ -137,28 +165,11 @@ def plot_azimuthal(simulation):
     plt.show()
 
 
-def plot_radial_distance(simulation):
+def plot_angular_velocity(simulation, window_size=10):
     time = np.arange(len(get_trajectory(simulation))) * simulation.stride * simulation.timestep
     trajectory = get_trajectory(simulation)
-    centre_positions = trajectory[:, 0, :]
-
-    x = centre_positions[:, 0]
-    y = centre_positions[:, 1]
-    radial_distance = np.sqrt(x**2 + y**2)
-
-    plt.figure(figsize=(10, 5))
-    plt.plot(time, radial_distance)
-    plt.xlabel("Time (fs)")
-    plt.ylabel("Radial Distance (Å)")
-    plt.title("Central Atom Radial Distance")
-    plt.grid(True)
-    plt.show()
-
-
-def plot_angular_velocity(simulation):
-    time = np.arange(len(get_trajectory(simulation))) * simulation.stride * simulation.timestep
-    trajectory = get_trajectory(simulation)
-    centre_positions = trajectory[:, 0, :]
+    centre_positions = moving_average(trajectory[:, 0, :], window_size)
+    time = time[:len(centre_positions)]
 
     x = centre_positions[:, 0]
     y = centre_positions[:, 1]
