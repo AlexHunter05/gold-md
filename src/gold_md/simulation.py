@@ -124,6 +124,16 @@ class AMDC:
 
         escaped = False
 
+        # Moving average settings
+        window_size = 10
+        position_buffer = np.tile(self.positions[0], (window_size, 1))
+        position_sum = np.sum(position_buffer, axis=0)
+        buffer_index = 0
+
+        # Escape detection
+        escape_counter = 0
+        escape_duration = 50
+
         try:
             # Velocity Verlet algorithm
             for _ in range(nsteps):
@@ -144,10 +154,23 @@ class AMDC:
 
                 self.steps += 1
 
+                # Update moving average of central atom position
+                position_sum -= position_buffer[buffer_index]
+                position_buffer[buffer_index] = self.positions[0]
+                position_sum += position_buffer[buffer_index]
+                buffer_index = (buffer_index + 1) % window_size
+
+                average_position = position_sum / window_size
+
                 # Check whether the central atom has escaped
                 if until_escape:
-                    distances = np.linalg.norm(self.positions[1:] - self.positions[0], axis=1)
-                    escaped = np.all(distances > self.escape_threshold)
+                    distances = np.linalg.norm(self.positions[1:] - average_position, axis=1)
+                    if np.all(distances > self.escape_threshold):
+                        escape_counter += 1
+                    else:
+                        escape_counter = 0
+
+                    escaped = escape_counter * self.timestep >= escape_duration
 
                 # Record energies and trajectory
                 if self.steps % self.stride == 0 or escaped:
