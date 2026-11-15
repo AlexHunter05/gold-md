@@ -32,12 +32,14 @@ class AMDC:
 
         # Non-conservative force settings
         self.K = 1.0
-        self.centre = np.zeros(3)
+        self.centre = self.positions[0].copy()
         self.non_conservative_atoms = np.zeros(self.natoms)
+        self.non_conservative_force_enabled = False
 
-        # Compute escape threshold based on initial configuration
+        # Compute thresholds based on initial configuration
         self.initial_distances = np.linalg.norm(self.positions[1:] - self.positions[0], axis=1)
-        self.escape_threshold = 1.1 * np.min(self.initial_distances)
+        self.first_shell_radius = np.min(self.initial_distances)
+        self.escape_threshold = 1.1 * self.first_shell_radius
 
         # Initial thermal velocities
         self.rng = np.random.default_rng(seed)
@@ -66,6 +68,7 @@ class AMDC:
 
     def apply_non_conservative_force(self, atoms):
         self.non_conservative_atoms[atoms] = 1
+        self.non_conservative_force_enabled = True
         self.calculate_forces()
 
     def non_conservative_force(self, K):
@@ -94,7 +97,7 @@ class AMDC:
             self.density_derivative,
             self.rphi_derivative)
         
-        if np.any(self.non_conservative_atoms):
+        if self.non_conservative_force_enabled and np.any(self.non_conservative_atoms):
             self.forces += self.non_conservative_force(self.K)
 
     def write_xyz_frame(self, file):
@@ -123,6 +126,11 @@ class AMDC:
             last_saved_step = self.steps
 
         escaped = False
+        returned = False
+        first_shell_exited = False
+
+        self.outcome = "unresolved"
+        self.outcome_time = None
 
         # Moving average settings
         window_size = 10
@@ -134,6 +142,14 @@ class AMDC:
         escape_counter = 0
         escape_duration = 50
 
+        # Return detection
+        return_radius = 0.5 * self.first_shell_radius
+        return_duration = 50
+        radial_buffer = np.zeros(window_size)
+        radial_sum = 0.0
+        radial_buffer_index = 0
+        return_counter = 0
+
         try:
             # Velocity Verlet algorithm
             for _ in range(nsteps):
@@ -144,6 +160,17 @@ class AMDC:
 
                 self.vel += (0.5 * self.accel_conversion * self.forces / self.masses[:, None] * self.timestep) * self.moving_atoms[:, None]
                 self.positions += self.vel * self.timestep * self.moving_atoms[:, None]
+                
+                # Check whether the central atom has left the first shell
+                if until_escape and not first_shell_exited:
+                    radial_distance = np.linalg.norm(self.positions[0] - self.centre)
+
+                    if radial_distance > self.first_shell_radius:
+                        first_shell_exited = True
+                        self.non_conservative_force_enabled = False
+                        radial_buffer.fill(radial_distance)
+                        radial_sum = np.sum(radial_buffer)
+                        
                 self.calculate_forces()
                 self.vel += (0.5 * self.accel_conversion * self.forces / self.masses[:, None] * self.timestep) * self.moving_atoms[:, None]
 
@@ -162,15 +189,35 @@ class AMDC:
 
                 average_position = position_sum / window_size
 
-                # Check whether the central atom has escaped
-                if until_escape:
+                # Check for escape or return after first-shell exit
+                if until_escape and first_shell_exited:
+
+                    # Check for true escape
                     distances = np.linalg.norm(self.positions[1:] - average_position, axis=1)
+
                     if np.all(distances > self.escape_threshold):
                         escape_counter += 1
                     else:
                         escape_counter = 0
 
                     escaped = escape_counter * self.timestep >= escape_duration
+
+                    # Update moving average of radial distance
+                    radial_distance = np.linalg.norm(self.positions[0] - self.centre)
+                    radial_sum -= radial_buffer[radial_buffer_index]
+                    radial_buffer[radial_buffer_index] = radial_distance
+                    radial_sum += radial_buffer[radial_buffer_index]
+                    radial_buffer_index = (radial_buffer_index + 1) % window_size
+
+                    average_radial_distance = radial_sum / window_size
+
+                    # Check whether the atom has returned to the central region
+                    if average_radial_distance < return_radius:
+                        return_counter += 1
+                    else:
+                        return_counter = 0
+
+                    returned = return_counter * self.timestep >= return_duration
 
                 # Record energies and trajectory
                 if self.steps % self.stride == 0 or escaped:
@@ -183,7 +230,7 @@ class AMDC:
                         self.write_xyz_frame(xyz_file)
                         last_saved_step = self.steps
 
-                if escaped:
+                if escaped or returned:
                     break
 
             # Record final configuration if it has not already been saved
@@ -196,6 +243,14 @@ class AMDC:
                 print(f"Saved trajectory to {self.trajectory_file}")
 
         if escaped:
-            return self.steps * self.timestep
+            self.outcome = "escaped"
+        elif returned:
+            self.outcome = "returned"
+
+        if self.outcome != "unresolved":
+            self.outcome_time = self.steps * self.timestep
+
+        if escaped:
+            return self.outcome_time
 
         return None
