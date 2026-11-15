@@ -6,13 +6,17 @@ from pathlib import Path
 from datetime import datetime, timezone
 
 
-def run_escape_time(potential, positions, output_folder, seed, fixed, max_steps=None):
+
+def run_escape_time(potential, positions, output_folder, seed, fixed, turn_force_off=False, max_steps=None):
     simulation = AMDC(potential, positions, "NVE", seed=seed)
     natoms = len(positions)
 
     if fixed:
         simulation.fix_atoms(range(1, natoms))
     simulation.apply_non_conservative_force(0)
+
+    if turn_force_off:
+        simulation.disable_force_after_shell_exit()
 
     trajectory_file = f"{output_folder}/simulation_{seed}"
 
@@ -24,7 +28,7 @@ def run_escape_time(potential, positions, output_folder, seed, fixed, max_steps=
     return simulation, escape_time
 
 
-def repeat_simulations(potential, positions, output_folder, nruns, fixed, max_steps=None):
+def repeat_simulations(potential, positions, output_folder, nruns, fixed, max_steps=None, turn_force_off=False):
 
     os.makedirs(f"{output_folder}", exist_ok=True)
 
@@ -35,14 +39,15 @@ def repeat_simulations(potential, positions, output_folder, nruns, fixed, max_st
             sim_number += 1
 
         current_seed = sim_number
-        simulation, escape_time = run_escape_time(potential, positions, output_folder, current_seed, fixed, max_steps)
-        save_result(simulation, len(positions), fixed, current_seed, escape_time, max_steps)
+        simulation, escape_time = run_escape_time(potential, positions, output_folder, current_seed, fixed, turn_force_off=turn_force_off, max_steps=max_steps)
+        save_result(simulation, len(positions), fixed, turn_force_off, current_seed, escape_time, max_steps)
         print(f"Run {i+1}/{nruns} complete,   Seed = {current_seed},   Escape time = {escape_time} fs")
 
     return simulation
 
 
-def save_result(simulation, natoms, fixed, seed, escape_time, max_steps):
+
+def save_result(simulation, natoms, fixed, turn_force_off, seed, escape_time, max_steps):
     results_file = Path("Outputs/Simulation results.csv")
 
     shells = {13: 2, 55: 3, 147: 4, 309: 5, 561: 6}
@@ -52,6 +57,7 @@ def save_result(simulation, natoms, fixed, seed, escape_time, max_steps):
         "natoms": natoms,
         "shells": shells.get(natoms),
         "fixed": fixed,
+        "force_off": turn_force_off,
         "seed": seed,
         "escape_time (fs)": escape_time,
         "escaped": escape_time is not None,
