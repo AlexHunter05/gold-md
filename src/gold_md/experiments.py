@@ -59,7 +59,7 @@ def save_result(simulation, natoms, fixed, turn_force_off, seed, escape_time, ma
         "fixed": fixed,
         "force_off": turn_force_off,
         "seed": seed,
-        "escape_time (fs)": escape_time,
+        "escape_time": escape_time,
         "escaped": escape_time is not None,
         "max_steps": max_steps,
         "temperature": simulation.temperature,

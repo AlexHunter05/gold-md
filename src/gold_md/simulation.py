@@ -172,6 +172,7 @@ class AMDC:
                     if radial_distance > self.first_shell_radius:
                         first_shell_exited = True
                         self.non_conservative_force_enabled = False
+                        print(f"First shell exited at {self.steps} fs. Non-conservative force switched off.")
                         
                 self.calculate_forces()
                 self.vel += (0.5 * self.accel_conversion * self.forces / self.masses[:, None] * self.timestep) * self.moving_atoms[:, None]
