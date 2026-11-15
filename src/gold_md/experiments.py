@@ -54,13 +54,14 @@ def save_result(simulation, natoms, fixed, turn_force_off, seed, escape_time, ma
 
     result = {
         "date": datetime.now(timezone.utc).isoformat(),
-        "natoms": natoms,
         "shells": shells.get(natoms),
+        "natoms": natoms,
+        "seed": seed,
         "fixed": fixed,
         "force_off": turn_force_off,
-        "seed": seed,
         "escape_time": escape_time,
         "escaped": escape_time is not None,
+        "first_shell_exit_time": simulation.first_shell_exit_time,
         "max_steps": max_steps,
         "temperature": simulation.temperature,
         "force_constant": simulation.K,
