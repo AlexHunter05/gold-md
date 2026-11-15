@@ -35,6 +35,7 @@ class AMDC:
         self.centre = self.positions[0].copy()
         self.non_conservative_atoms = np.zeros(self.natoms)
         self.non_conservative_force_enabled = False
+        self.disable_force_on_shell_exit = False
 
         # Compute thresholds based on initial configuration
         self.initial_distances = np.linalg.norm(self.positions[1:] - self.positions[0], axis=1)
@@ -70,6 +71,9 @@ class AMDC:
         self.non_conservative_atoms[atoms] = 1
         self.non_conservative_force_enabled = True
         self.calculate_forces()
+
+    def disable_force_after_shell_exit(self):
+        self.disable_force_on_shell_exit = True
 
     def non_conservative_force(self, K):
         # Calculate centre of mass, excluding central atom
@@ -162,14 +166,12 @@ class AMDC:
                 self.positions += self.vel * self.timestep * self.moving_atoms[:, None]
                 
                 # Check whether the central atom has left the first shell
-                if until_escape and not first_shell_exited:
+                if until_escape and self.disable_force_on_shell_exit and not first_shell_exited:
                     radial_distance = np.linalg.norm(self.positions[0] - self.centre)
 
                     if radial_distance > self.first_shell_radius:
                         first_shell_exited = True
                         self.non_conservative_force_enabled = False
-                        radial_buffer.fill(radial_distance)
-                        radial_sum = np.sum(radial_buffer)
                         
                 self.calculate_forces()
                 self.vel += (0.5 * self.accel_conversion * self.forces / self.masses[:, None] * self.timestep) * self.moving_atoms[:, None]
