@@ -147,8 +147,8 @@ class AMDC:
         escape_duration = 50
 
         # Return detection
-        return_radius = 0.5 * self.first_shell_radius
-        return_duration = 50
+        return_radius = 0.25 * self.first_shell_radius
+        return_duration = 100
         radial_buffer = np.zeros(window_size)
         radial_sum = 0.0
         radial_buffer_index = 0
