@@ -38,6 +38,7 @@ class AMDC:
         self.disable_force_on_shell_exit = False
         self.first_shell_exit_time = None
         self.first_return_time = None
+        self.escape_kinetic_energy = None
 
         # Compute thresholds based on initial configuration
         self.initial_distances = np.linalg.norm(self.positions[1:] - self.positions[0], axis=1)
@@ -240,6 +241,9 @@ class AMDC:
                     self.potential_energies.append(self.eng)
                     self.kinetic_energies.append(KE)
                     self.total_energies.append(self.eng + KE + self.therm)
+
+                    if escaped:
+                        self.escape_kinetic_energy = kinetic(self.vel[0:1], self.masses[0:1], self.accel_conversion)
 
                     if xyz_file is not None and self.steps != last_saved_step:
                         self.write_xyz_frame(xyz_file)

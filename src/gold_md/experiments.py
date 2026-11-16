@@ -46,6 +46,7 @@ def repeat_simulations(potential, positions, output_folder, nruns, fixed, max_st
     return simulation
 
 
+
 def save_result(simulation, natoms, fixed, turn_force_off, seed, escape_time, max_steps):
     results_file = Path("Outputs/Simulation results.csv")
 
@@ -62,75 +63,17 @@ def save_result(simulation, natoms, fixed, turn_force_off, seed, escape_time, ma
         "first_shell_exit_time": simulation.first_shell_exit_time,
         "first_return_time": simulation.first_return_time,
         "escape_time": escape_time,
+        "escape_kinetic_energy": simulation.escape_kinetic_energy,
         "max_steps": max_steps,
         "temperature": simulation.temperature,
         "force_constant": simulation.K,
         "ensemble": simulation.ensemble
     }
 
-    fieldnames = list(result.keys())
-    rows = []
+    file_exists = results_file.exists() and results_file.stat().st_size > 0
 
-    if results_file.exists() and results_file.stat().st_size > 0:
-        with open(results_file, "r", newline="") as file:
-            reader = csv.DictReader(file)
-            fieldnames = reader.fieldnames
-            rows = list(reader)
-
-    rows = [
-        row for row in rows
-        if not (
-            int(row["seed"]) == seed
-            and int(row["natoms"]) == natoms
-            and row["fixed"].lower() == str(fixed).lower()
-            and row["force_off"].lower() == str(turn_force_off).lower()
-        )
-    ]
-
-    rows.append(result)
-
-    with open(results_file, "w", newline="") as file:
-        writer = csv.DictWriter(file, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(rows)
-
-import pandas as pd
-def rerun_old_returns(potential, positions, output_folder, shells, fixed, turn_force_off=False, max_steps=None):
-
-    results_file = Path("Outputs/Simulation results.csv")
-    results = pd.read_csv(results_file)
-
-    # Identify old simulations incorrectly classified as returned
-    old_false = results["outcome"].astype(str).str.lower() == "false"
-    first_shell_exited = pd.to_numeric(results["first_shell_exit_time"], errors="coerce").notna()
-
-    candidates = results[
-        old_false
-        & first_shell_exited
-        & (results["shells"] == shells)
-        & (results["fixed"] == fixed)
-        & (results["force_off"] == turn_force_off)
-    ]
-
-    if candidates.empty:
-        print(f"No simulations to rerun for {shells} shells, fixed={fixed}, force_off={turn_force_off}.")
-        return
-
-    os.makedirs(output_folder, exist_ok=True)
-
-    seeds = candidates["seed"].tolist()
-
-    print(f"Rerunning {len(seeds)} simulations for {shells} shells.")
-    print(f"Fixed = {fixed}, Force turns off = {turn_force_off}\n")
-
-    for i, seed in enumerate(seeds):
-        simulation, escape_time = run_escape_time(
-            potential, positions, output_folder, seed, fixed,
-            turn_force_off=turn_force_off, max_steps=max_steps
-        )
-
-        save_result(simulation, len(positions), fixed, turn_force_off, seed, escape_time, max_steps)
-
-        print(f"Run {i+1}/{len(seeds)} complete, Seed = {seed}, Escape time = {escape_time} fs, Outcome = {simulation.outcome}.\n")
-
-    return simulation
+    with open(results_file, "a", newline="") as file:
+        writer = csv.DictWriter(file, fieldnames=result.keys())
+        if not file_exists:
+            writer.writeheader()
+        writer.writerow(result)
