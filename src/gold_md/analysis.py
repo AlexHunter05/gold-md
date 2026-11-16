@@ -211,6 +211,9 @@ def test_initial_minimum(simulation, displacement=0.2):
             simulation.positions[0, axis] += direction * displacement
 
             simulation.calculate_forces()
+            print("Position:", simulation.positions[0])
+            print("Energy:", repr(simulation.eng))
+            print("Force:", simulation.forces[0])
             PE_change = simulation.eng - initial_PE
 
             print(f"{name} {direction * displacement:+.2f} Å: {PE_change:+.15e} eV")
