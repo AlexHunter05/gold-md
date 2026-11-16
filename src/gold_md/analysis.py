@@ -195,3 +195,22 @@ def plot_angular_velocity(simulation, window_size=10):
     plt.title("Central Atom Angular Velocity")
     plt.grid(True)
     plt.show()
+
+
+def plot_nearest_distance(simulation, window_size=10, escape_distance=5.5):
+    trajectory = get_trajectory(simulation)
+    time = np.arange(len(trajectory)) * simulation.stride * simulation.timestep
+    separations = np.linalg.norm(trajectory[:, 1:, :] - trajectory[:, 0:1, :], axis=2)
+    nearest = np.min(separations, axis=1)
+    nearest = moving_average(nearest, window_size)
+    time = time[:len(nearest)]
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(time, nearest, label="Smoothed distance to nearest atom")
+    plt.axhline(y=escape_distance, color="red", linestyle="--", label="Escape distance")
+    plt.xlabel("Time (fs)")
+    plt.ylabel("Distance to nearest atom (Å)")
+    plt.title("Central Atom Distance to Nearest Atom")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
