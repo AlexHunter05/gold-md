@@ -38,6 +38,7 @@ class AMDC:
         self.disable_force_on_shell_exit = False
         self.first_shell_exit_time = None
         self.first_return_time = None
+        self.escape_time = None
         self.escape_kinetic_energy = None
         self.central_potential_energies = []
 
@@ -264,8 +265,8 @@ class AMDC:
             self.outcome = "unresolved"
 
         if escaped:
-            selfescape_time = self.steps * self.timestep
+            self.escape_time = self.steps * self.timestep
         else:
-            selfescape_time = None
+            self.escape_time = None
 
-        return selfescape_time
+        return self.escape_time
