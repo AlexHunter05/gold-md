@@ -41,15 +41,14 @@ def plot_energy_conservation(simulation):
     plt.show()
 
 
+
 def plot_PE(simulation, window_size=10):
     time = get_time(simulation)
-    PE = np.array(simulation.potential_energies)
-
-    central_PE = moving_average(PE[:, 0], window_size)
-    time = time[:len(central_PE)]
+    PE = moving_average(np.array(simulation.central_potential_energies), window_size)
+    time = time[:len(PE)]
 
     plt.figure(figsize=(10, 5))
-    plt.plot(time, central_PE, label="Central Atom Potential Energy")
+    plt.plot(time, PE, label="Central Atom Potential Energy")
     plt.xlabel("Time (fs)")
     plt.ylabel("Potential Energy (eV)")
     plt.title(f"Central Atom Potential Energy for {simulation.natoms}-atom Gold Cluster")

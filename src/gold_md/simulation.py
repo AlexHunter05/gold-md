@@ -39,6 +39,7 @@ class AMDC:
         self.first_shell_exit_time = None
         self.first_return_time = None
         self.escape_kinetic_energy = None
+        self.central_potential_energies = []
 
         # Compute thresholds based on initial configuration
         self.initial_distances = np.linalg.norm(self.positions[1:] - self.positions[0], axis=1)
@@ -94,7 +95,7 @@ class AMDC:
         return forces * self.non_conservative_atoms[:, None]
 
     def calculate_forces(self):
-        self.eng, self.forces = potential(
+        self.eng, self.forces, self.central_eng = potential(
             self.positions,
             self.cutoff,
             self.F_spline,
@@ -239,6 +240,7 @@ class AMDC:
                 if self.steps % self.stride == 0 or escaped:
                     KE = kinetic(self.vel, self.masses, self.accel_conversion)
                     self.potential_energies.append(self.eng)
+                    self.central_potential_energies.append(self.central_eng)
                     self.kinetic_energies.append(KE)
                     self.total_energies.append(self.eng + KE + self.therm)
 

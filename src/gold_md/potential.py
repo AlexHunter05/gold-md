@@ -28,7 +28,8 @@ def potential(positions, cutoff, F_spline, density_spline, rphi_spline, F_deriva
     np.add.at(rho, j, density)
 
     # Calculate embedding energy and derivatives
-    embedding_energy = np.sum(F_spline(rho))
+    embedding_energies = F_spline(rho)
+    embedding_energy = np.sum(embedding_energies)
     embedding_derivatives = F_derivative(rho)
 
     # Calculate pair energy
@@ -52,7 +53,12 @@ def potential(positions, cutoff, F_spline, density_spline, rphi_spline, F_deriva
     # Total potential energy
     energy = embedding_energy + pair_energy
 
-    return energy, forces
+    # Central atom potential energy
+    central_mask = (i == 0) | (j == 0)
+    central_pair_energy = 0.5 * np.sum(phi[central_mask])
+    central_energy = embedding_energies[0] + central_pair_energy
+
+    return energy, forces, central_energy
 
 def kinetic(vel, masses, accel_conversion):
     return 0.5 * np.sum(masses[:, None] * vel**2) / accel_conversion
