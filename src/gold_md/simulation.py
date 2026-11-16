@@ -37,6 +37,7 @@ class AMDC:
         self.non_conservative_force_enabled = False
         self.disable_force_on_shell_exit = False
         self.first_shell_exit_time = None
+        self.first_return_time = None
 
         # Compute thresholds based on initial configuration
         self.initial_distances = np.linalg.norm(self.positions[1:] - self.positions[0], axis=1)
@@ -170,7 +171,7 @@ class AMDC:
                 if until_escape and not first_shell_exited:
                     radial_distance = np.linalg.norm(self.positions[0] - self.centre)
 
-                    if radial_distance > self.first_shell_radius:
+                    if radial_distance > 1.1 * self.first_shell_radius:
                         first_shell_exited = True
                         self.first_shell_exit_time = (self.steps + 1) * self.timestep
                         radial_buffer.fill(radial_distance)
@@ -201,24 +202,29 @@ class AMDC:
                 # Check for escape or return after first-shell exit
                 if until_escape and first_shell_exited:
 
-                    # Check for true escape
+                    # Check for escape
                     distances = np.linalg.norm(self.positions[1:] - average_position, axis=1)
-
-                    if np.all(distances > self.escape_threshold):
-                        escape_counter += 1
-                    else:
-                        escape_counter = 0
-
                     escaped = np.all(distances > self.escape_threshold)
 
-                    # Update moving average of radial distance
-                    radial_distance = np.linalg.norm(self.positions[0] - self.centre)
-                    radial_sum -= radial_buffer[radial_buffer_index]
-                    radial_buffer[radial_buffer_index] = radial_distance
-                    radial_sum += radial_buffer[radial_buffer_index]
-                    radial_buffer_index = (radial_buffer_index + 1) % window_size
+                    # Check for first return
+                    if self.first_return_time is None:
 
-                    average_radial_distance = radial_sum / window_size
+                        radial_distance = np.linalg.norm(self.positions[0] - self.centre)
+                        radial_sum -= radial_buffer[radial_buffer_index]
+                        radial_buffer[radial_buffer_index] = radial_distance
+                        radial_sum += radial_buffer[radial_buffer_index]
+                        radial_buffer_index = (radial_buffer_index + 1) % window_size
+
+                        average_radial_distance = radial_sum / window_size
+
+                        if average_radial_distance < return_radius:
+                            return_counter += 1
+                        else:
+                            return_counter = 0
+
+                        if return_counter * self.timestep >= return_duration:
+                            self.first_return_time = self.steps * self.timestep
+                            print(f"Central atom returned at {self.first_return_time} fs.")
 
                     # Check whether the atom has returned to the central region
                     if average_radial_distance < return_radius:
@@ -239,7 +245,7 @@ class AMDC:
                         self.write_xyz_frame(xyz_file)
                         last_saved_step = self.steps
 
-                if escaped or returned:
+                if escaped:
                     break
 
             # Record final configuration if it has not already been saved
@@ -253,13 +259,14 @@ class AMDC:
 
         if escaped:
             self.outcome = "escaped"
-        elif returned:
+        elif self.first_return_time is not None:
             self.outcome = "returned"
-
-        if self.outcome != "unresolved":
-            self.outcome_time = self.steps * self.timestep
+        else:
+            self.outcome = "unresolved"
 
         if escaped:
-            return self.outcome_time
+            escape_time = self.steps * self.timestep
+        else:
+            escape_time = None
 
-        return None
+        return escape_time

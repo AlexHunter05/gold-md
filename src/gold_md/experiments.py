@@ -50,18 +50,19 @@ def repeat_simulations(potential, positions, output_folder, nruns, fixed, max_st
 def save_result(simulation, natoms, fixed, turn_force_off, seed, escape_time, max_steps):
     results_file = Path("Outputs/Simulation results.csv")
 
-    shells = {13: 2, 55: 3, 147: 4, 309: 5, 561: 6}
+    shells = {13: 2, 55: 3, 147: 4, 309: 5, 561: 6, 923: 7}
 
     result = {
         "date": datetime.now(timezone.utc).isoformat(),
+        "seed": seed,
         "shells": shells.get(natoms),
         "natoms": natoms,
-        "seed": seed,
         "fixed": fixed,
         "force_off": turn_force_off,
-        "escape_time": escape_time,
-        "escaped": escape_time is not None,
+        "outcome": simulation.outcome,
         "first_shell_exit_time": simulation.first_shell_exit_time,
+        "first_return_time": simulation.first_return_time,
+        "escape_time": escape_time,
         "max_steps": max_steps,
         "temperature": simulation.temperature,
         "force_constant": simulation.K,
