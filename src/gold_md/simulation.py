@@ -41,7 +41,7 @@ class AMDC:
         # Compute thresholds based on initial configuration
         self.initial_distances = np.linalg.norm(self.positions[1:] - self.positions[0], axis=1)
         self.first_shell_radius = np.min(self.initial_distances)
-        self.escape_threshold = 1.1 * self.first_shell_radius
+        self.escape_threshold = self.cutoff
 
         # Initial thermal velocities
         self.rng = np.random.default_rng(seed)
@@ -145,10 +145,10 @@ class AMDC:
 
         # Escape detection
         escape_counter = 0
-        escape_duration = 50
+        escape_duration = 0
 
         # Return detection
-        return_radius = 0.25 * self.first_shell_radius
+        return_radius = 0.5 * self.first_shell_radius
         return_duration = 100
         radial_buffer = np.zeros(window_size)
         radial_sum = 0.0
@@ -175,7 +175,7 @@ class AMDC:
                         self.first_shell_exit_time = (self.steps + 1) * self.timestep
                         radial_buffer.fill(radial_distance)
                         radial_sum = np.sum(radial_buffer)
-                        
+
                         if self.disable_force_on_shell_exit:
                             self.non_conservative_force_enabled = False
                             print(f"First shell exited at {self.first_shell_exit_time} fs. Non-conservative force switched off.")
@@ -209,7 +209,7 @@ class AMDC:
                     else:
                         escape_counter = 0
 
-                    escaped = escape_counter * self.timestep >= escape_duration
+                    escaped = np.all(distances > self.escape_threshold)
 
                     # Update moving average of radial distance
                     radial_distance = np.linalg.norm(self.positions[0] - self.centre)
