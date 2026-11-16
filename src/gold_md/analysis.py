@@ -211,6 +211,7 @@ def plot_nearest_distance(simulation, window_size=10, escape_distance=5.5):
     plt.xlabel("Time (fs)")
     plt.ylabel("Distance to nearest atom (Å)")
     plt.title("Central Atom Distance to Nearest Atom")
+    plt.ylim(bottom=0)
     plt.legend()
     plt.grid(True)
     plt.show()
