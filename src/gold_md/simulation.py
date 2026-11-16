@@ -149,7 +149,7 @@ class AMDC:
 
         # Return detection
         return_radius = 0.5 * self.first_shell_radius
-        return_duration = 100
+        return_duration = 200
         radial_buffer = np.zeros(window_size)
         radial_sum = 0.0
         radial_buffer_index = 0
