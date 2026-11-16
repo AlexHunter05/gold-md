@@ -28,18 +28,21 @@ def load_simulation(filename, stride=10, timestep=1.0):
     return simulation
 
 
-def plot_energy_conservation(simulation):
+def plot_energy_conservation(simulation, window_size=10):
     time = get_time(simulation)
     energy_change = np.array(simulation.total_energies) - simulation.total_energies[0]
 
+    energy_change = moving_average(energy_change, window_size)
+    time = time[:len(energy_change)]
+
     plt.figure(figsize=(10, 6))
-    plt.plot(time, energy_change)
+    plt.plot(time, energy_change, label="Smoothed Energy Change")
     plt.xlabel("Time (fs)")
     plt.ylabel("Change in Conserved Energy (eV)")
     plt.title("Gold EAM Simulation - Energy Conservation")
+    plt.legend()
     plt.grid(True)
     plt.show()
-
 
 
 def plot_PE(simulation, window_size=10):
@@ -57,13 +60,15 @@ def plot_PE(simulation, window_size=10):
     plt.show()
 
 
-def plot_KE(simulation, equilibration_steps=1000):
+def plot_KE(simulation, equilibration_steps=1000, window_size=10):
     time = get_time(simulation)
-    ave_KE = np.mean(np.array(simulation.kinetic_energies)[equilibration_steps // simulation.stride:])
+    KE = moving_average(np.array(simulation.kinetic_energies), window_size)
+    time = time[:len(KE)]
+    ave_KE = np.mean(KE[equilibration_steps // simulation.stride:])
     expected_KE = 1.5 * np.sum(simulation.moving_atoms) * simulation.kB * simulation.temperature
 
     plt.figure(figsize=(10, 6))
-    plt.plot(time, simulation.kinetic_energies, label="Kinetic Energy")
+    plt.plot(time, KE, label="Kinetic Energy")
     if simulation.ensemble == "NVT":
         plt.axhline(ave_KE, color="red", linestyle="--", label=f"Average KE = {ave_KE:.3f}")
         plt.axhline(expected_KE, color="green", linestyle="--", label=f"Expected KE = {expected_KE:.3f}")
@@ -75,10 +80,12 @@ def plot_KE(simulation, equilibration_steps=1000):
     plt.show()
 
 
-def plot_temp(simulation, equilibration_steps=1000):
+def plot_temp(simulation, equilibration_steps=1000, window_size=10):
     time = get_time(simulation)
     degrees_of_freedom = 3 * np.sum(simulation.moving_atoms)
     temps = (2 * np.array(simulation.kinetic_energies) / (simulation.kB * degrees_of_freedom))
+    temps = moving_average(temps, window_size)
+    time = time[:len(temps)]
     ave_temps = np.mean(temps[equilibration_steps // simulation.stride:])
 
     plt.figure(figsize=(10, 6))
