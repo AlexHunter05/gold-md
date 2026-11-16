@@ -134,21 +134,16 @@ class AMDC:
             last_saved_step = self.steps
 
         escaped = False
-        returned = False
         first_shell_exited = False
 
         self.outcome = "unresolved"
-        self.outcome_time = None
+        self.escape_time = None
 
         # Moving average settings
         window_size = 10
         position_buffer = np.tile(self.positions[0], (window_size, 1))
         position_sum = np.sum(position_buffer, axis=0)
         buffer_index = 0
-
-        # Escape detection
-        escape_counter = 0
-        escape_duration = 0
 
         # Return detection
         return_radius = 0.5 * self.first_shell_radius
@@ -234,8 +229,6 @@ class AMDC:
                     else:
                         return_counter = 0
 
-                    returned = return_counter * self.timestep >= return_duration
-
                 # Record energies and trajectory
                 if self.steps % self.stride == 0 or escaped:
                     KE = kinetic(self.vel, self.masses, self.accel_conversion)
@@ -271,8 +264,8 @@ class AMDC:
             self.outcome = "unresolved"
 
         if escaped:
-            escape_time = self.steps * self.timestep
+            selfescape_time = self.steps * self.timestep
         else:
-            escape_time = None
+            selfescape_time = None
 
-        return escape_time
+        return selfescape_time
