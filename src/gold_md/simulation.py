@@ -26,6 +26,7 @@ class AMDC:
 
         # Initial atomic configuration
         self.positions = np.array(positions, dtype=float)
+        self.initial_positions = self.positions.copy()
         self.natoms = len(self.positions)
         self.masses = np.full(self.natoms, self.mass)
         self.moving_atoms = np.ones(self.natoms)
