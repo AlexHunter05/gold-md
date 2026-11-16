@@ -197,7 +197,7 @@ def plot_angular_velocity(simulation, window_size=10):
     plt.show()
 
 
-def test_initial_minimum(simulation, displacement=0.01):
+def test_initial_minimum(simulation, displacement=0.2):
     original_positions = simulation.positions.copy()
 
     simulation.calculate_forces()
@@ -213,7 +213,7 @@ def test_initial_minimum(simulation, displacement=0.01):
             simulation.calculate_forces()
             PE_change = simulation.eng - initial_PE
 
-            print(f"{name} {direction * displacement:+.2f} Å: {PE_change:+.8f} eV")
+            print(f"{name} {direction * displacement:+.2f} Å: {PE_change:+.15e} eV")
 
     simulation.positions = original_positions.copy()
     simulation.calculate_forces()
