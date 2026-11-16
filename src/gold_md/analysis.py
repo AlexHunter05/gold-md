@@ -195,3 +195,25 @@ def plot_angular_velocity(simulation, window_size=10):
     plt.title("Central Atom Angular Velocity")
     plt.grid(True)
     plt.show()
+
+
+def test_initial_minimum(simulation, displacement=0.01):
+    original_positions = simulation.positions.copy()
+
+    simulation.calculate_forces()
+    initial_PE = simulation.eng
+
+    print(f"Initial PE: {initial_PE:.8f} eV\n")
+
+    for axis, name in enumerate(["X", "Y", "Z"]):
+        for direction in [-1, 1]:
+            simulation.positions = original_positions.copy()
+            simulation.positions[0, axis] += direction * displacement
+
+            simulation.calculate_forces()
+            PE_change = simulation.eng - initial_PE
+
+            print(f"{name} {direction * displacement:+.2f} Å: {PE_change:+.8f} eV")
+
+    simulation.positions = original_positions.copy()
+    simulation.calculate_forces()
