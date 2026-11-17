@@ -225,3 +225,77 @@ def plot_nearest_distance(simulation, window_size=10, escape_distance=5.5):
     plt.legend()
     plt.grid(True)
     plt.show()
+
+
+def plot_energy_spaghetti(simulations):
+    colours = plt.cm.turbo(np.linspace(0, 1, len(simulations)))
+
+    # Kinetic Energy
+    plt.figure(figsize=(10, 5))
+    for i, simulation in enumerate(simulations):
+        time = get_time(simulation)
+        KE = np.array(simulation.kinetic_energies)
+        plt.plot(time, KE, color=colours[i], alpha=0.7)
+
+    plt.xlabel("Time (fs)")
+    plt.ylabel("Kinetic Energy (eV)")
+    plt.title("Kinetic Energy – Individual Simulations")
+    plt.grid(alpha=0.4)
+    plt.tight_layout()
+    plt.show()
+
+    # Potential Energy
+    plt.figure(figsize=(10, 5))
+    for i, simulation in enumerate(simulations):
+        time = get_time(simulation)
+        PE = np.array(simulation.potential_energies)
+        plt.plot(time, PE, color=colours[i], alpha=0.7)
+
+    plt.xlabel("Time (fs)")
+    plt.ylabel("Potential Energy (eV)")
+    plt.title("Potential Energy – Individual Simulations")
+    plt.grid(alpha=0.4)
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_mean_energy(simulations):
+    # Find the common simulation length
+    min_length = min(len(simulation.kinetic_energies) for simulation in simulations)
+
+    # Collect energy data
+    KE = np.array([simulation.kinetic_energies[:min_length] for simulation in simulations])
+    PE = np.array([simulation.potential_energies[:min_length] for simulation in simulations])
+
+    # Calculate mean and standard deviation
+    mean_KE = np.mean(KE, axis=0)
+    std_KE = np.std(KE, axis=0)
+
+    mean_PE = np.mean(PE, axis=0)
+    std_PE = np.std(PE, axis=0)
+
+    time = np.arange(min_length) * simulations[0].stride * simulations[0].timestep
+
+    # Mean Kinetic Energy
+    plt.figure(figsize=(10, 5))
+    plt.plot(time, mean_KE, color="blue", label="Mean KE")
+    plt.fill_between(time, mean_KE - std_KE, mean_KE + std_KE, color="blue", alpha=0.2, label="±1 SD")
+    plt.xlabel("Time (fs)")
+    plt.ylabel("Kinetic Energy (eV)")
+    plt.title("Mean Kinetic Energy")
+    plt.legend()
+    plt.grid(alpha=0.4)
+    plt.tight_layout()
+    plt.show()
+
+    # Mean Potential Energy
+    plt.figure(figsize=(10, 5))
+    plt.plot(time, mean_PE, color="red", label="Mean PE")
+    plt.fill_between(time, mean_PE - std_PE, mean_PE + std_PE, color="red", alpha=0.2, label="±1 SD")
+    plt.xlabel("Time (fs)")
+    plt.ylabel("Potential Energy (eV)")
+    plt.title("Mean Potential Energy")
+    plt.legend()
+    plt.grid(alpha=0.4)
+    plt.tight_layout()
+    plt.show()
