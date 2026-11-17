@@ -7,12 +7,13 @@ from types import SimpleNamespace
 # Time axis (fs)
 def get_time(simulation):
     print("\n")
-    return np.arange(len(simulation.total_energies)) * simulation.stride * simulation.timestep
-
-
-def get_time(simulation):
     trajectory = read(simulation.trajectory_file, index=":")
     return np.arange(len(trajectory)) * simulation.stride * simulation.timestep
+
+
+def get_trajectory(simulation):
+    trajectory = read(simulation.trajectory_file, index=":")
+    return np.array([atoms.get_positions() for atoms in trajectory])
 
 
 def moving_average(data, window_size=10):
