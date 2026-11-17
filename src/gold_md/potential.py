@@ -53,12 +53,7 @@ def potential(positions, cutoff, F_spline, density_spline, rphi_spline, F_deriva
     # Total potential energy
     energy = embedding_energy + pair_energy
 
-    # Central atom potential energy
-    central_mask = (i == 0) | (j == 0)
-    central_pair_energy = 0.5 * np.sum(phi[central_mask])
-    central_energy = embedding_energies[0] + central_pair_energy
-
-    return energy, forces, central_energy
+    return energy, forces
 
 def kinetic(vel, masses, accel_conversion):
     return 0.5 * np.sum(masses[:, None] * vel**2) / accel_conversion

@@ -7,8 +7,7 @@ from types import SimpleNamespace
 # Time axis (fs)
 def get_time(simulation):
     print("\n")
-    trajectory = read(simulation.trajectory_file, index=":")
-    return np.arange(len(trajectory)) * simulation.stride * simulation.timestep
+    return simulation.energy_times
 
 
 def get_trajectory(simulation):
@@ -24,7 +23,7 @@ def load_simulation(filename, stride=10, timestep=1.0, number_of_simulations=Non
     path = Path(filename)
 
     if path.is_dir():
-        files = sorted(path.glob("simulation_*.xyz"), key=lambda x: int(x.stem.split("_")[1]))
+        files = sorted(path.glob("simulation_*.xyz"))
 
         if number_of_simulations is not None:
             files = files[:number_of_simulations]
@@ -37,6 +36,14 @@ def load_simulation(filename, stride=10, timestep=1.0, number_of_simulations=Non
     simulation.stride = stride
     simulation.timestep = timestep
     simulation.escape_threshold = 1.1 * np.min(np.linalg.norm(positions[0, 1:] - positions[0, 0], axis=1))
+
+    energy_file = path.parent / "Energies" / f"{path.stem}.npz"
+
+    with np.load(energy_file) as energies:
+        simulation.kinetic_energies = energies["KE"].copy()
+        simulation.potential_energies = energies["PE"].copy()
+        simulation.energy_times = energies["time"].copy()
+
     return simulation
 
 

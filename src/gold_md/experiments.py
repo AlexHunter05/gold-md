@@ -25,6 +25,15 @@ def run_escape_time(potential, positions, output_folder, seed, fixed, turn_force
     else:
         escape_time = simulation.md(trajectory_file=trajectory_file, until_escape=True, max_steps=max_steps)
 
+    energy_folder = Path(output_folder) / "Energies"
+    energy_folder.mkdir(parents=True, exist_ok=True)
+
+    np.savez_compressed(
+        energy_folder / f"simulation_{seed}.npz",
+        KE=simulation.kinetic_energies,
+        PE=simulation.potential_energies,
+        time=simulation.energy_times)
+    
     return simulation, escape_time
 
 
