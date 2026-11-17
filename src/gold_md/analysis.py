@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from ase.io import read
+from pathlib import Path
 from types import SimpleNamespace
 
 # Time axis (fs)
@@ -18,7 +19,17 @@ def moving_average(data, window_size=10):
     return np.array([np.mean(data[i:i + window_size], axis=0) for i in range(len(data) - window_size + 1)])
 
 
-def load_simulation(filename, stride=10, timestep=1.0):
+def load_simulation(filename, stride=10, timestep=1.0, number_of_simulations=None):
+    path = Path(filename)
+
+    if path.is_dir():
+        files = sorted(path.glob("simulation_*.traj"))
+
+        if number_of_simulations is not None:
+            files = files[:number_of_simulations]
+
+        return [load_simulation(file, stride, timestep) for file in files]
+
     positions = np.array([atoms.get_positions() for atoms in read(filename, index=":")])
     simulation = SimpleNamespace()
     simulation.trajectory_file = filename
