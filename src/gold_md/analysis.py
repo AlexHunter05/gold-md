@@ -10,9 +10,9 @@ def get_time(simulation):
     return np.arange(len(simulation.total_energies)) * simulation.stride * simulation.timestep
 
 
-def get_trajectory(simulation):
+def get_time(simulation):
     trajectory = read(simulation.trajectory_file, index=":")
-    return np.array([atoms.get_positions() for atoms in trajectory])
+    return np.arange(len(trajectory)) * simulation.stride * simulation.timestep
 
 
 def moving_average(data, window_size=10):
