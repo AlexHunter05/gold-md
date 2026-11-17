@@ -23,7 +23,7 @@ def load_simulation(filename, stride=10, timestep=1.0, number_of_simulations=Non
     path = Path(filename)
 
     if path.is_dir():
-        files = sorted(path.glob("simulation_*.traj"))
+        files = sorted(path.glob("simulation_*.xyz"), key=lambda x: int(x.stem.split("_")[1]))
 
         if number_of_simulations is not None:
             files = files[:number_of_simulations]
