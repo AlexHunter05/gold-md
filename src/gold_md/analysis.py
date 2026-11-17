@@ -149,9 +149,11 @@ def plot_radial_distance(simulation, window_size=10):
 
     plt.figure(figsize=(10, 5))
     plt.plot(time, radial_distance)
+    plt.axhline(y=simulation.escape_threshold, color="red", linestyle="--", label="Escape threshold")
     plt.xlabel("Time (fs)")
     plt.ylabel("Radial Distance (Å)")
     plt.title("Central Atom Radial Distance")
+    plt.legend()
     plt.grid(True)
     plt.show()
 
