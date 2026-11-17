@@ -47,15 +47,16 @@ def plot_energy_conservation(simulation, window_size=10):
 
 def plot_PE(simulation, window_size=10):
     time = get_time(simulation)
-    PE = moving_average(np.array(simulation.potential_energies), window_size)
+    PE = np.array(simulation.potential_energies)
+    PE = PE - PE[0]
+    PE = moving_average(PE, window_size)
     time = time[:len(PE)]
 
     plt.figure(figsize=(10, 5))
-    plt.plot(time, PE, label="Total System Potential Energy")
+    plt.plot(time, PE)
     plt.xlabel("Time (fs)")
-    plt.ylabel("Potential Energy (eV)")
+    plt.ylabel("Change in Potential Energy (eV)")
     plt.title(f"Potential Energy for {simulation.natoms}-atom Gold Cluster")
-    plt.legend()
     plt.grid(True)
     plt.show()
 
@@ -111,11 +112,9 @@ def plot_displacement(simulation, window_size=10):
 
     plt.figure(figsize=(10, 5))
     plt.plot(time, distances, label="Smoothed central atom displacement")
-    plt.axhline(y=simulation.escape_threshold, color="red", linestyle="--", label="Escape threshold")
     plt.xlabel("Time (fs)")
     plt.ylabel("Distance from centre (Å)")
     plt.title("Central Atom Displacement")
-    plt.legend()
     plt.grid(True)
     plt.show()
 
@@ -149,11 +148,9 @@ def plot_radial_distance(simulation, window_size=10):
 
     plt.figure(figsize=(10, 5))
     plt.plot(time, radial_distance)
-    plt.axhline(y=simulation.escape_threshold, color="red", linestyle="--", label="Escape threshold")
     plt.xlabel("Time (fs)")
     plt.ylabel("Radial Distance (Å)")
     plt.title("Central Atom Radial Distance")
-    plt.legend()
     plt.grid(True)
     plt.show()
 
