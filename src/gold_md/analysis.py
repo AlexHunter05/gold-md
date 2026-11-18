@@ -6,7 +6,6 @@ from types import SimpleNamespace
 
 # Time axis (fs)
 def get_time(simulation):
-    print("\n")
     return simulation.energy_times
 
 
