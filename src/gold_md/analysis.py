@@ -267,23 +267,17 @@ def plot_energy_spaghetti(simulations):
 
 
 def plot_mean_energy(simulations):
-    max_length = max(len(sim.kinetic_energies) for sim in simulations)
+    dt = simulations[0].stride * simulations[0].timestep
+    max_time = max(sim.energy_times[-1] for sim in simulations)
+    time = np.arange(0, max_time + dt, dt)
 
-    KE = np.full((len(simulations), max_length), np.nan)
-    PE = np.full((len(simulations), max_length), np.nan)
-
-    for i, simulation in enumerate(simulations):
-        length = len(simulation.kinetic_energies)
-        KE[i, :length] = simulation.kinetic_energies
-        PE[i, :length] = simulation.potential_energies
+    KE = np.array([np.interp(time, sim.energy_times, sim.kinetic_energies, left=np.nan, right=np.nan) for sim in simulations])
+    PE = np.array([np.interp(time, sim.energy_times, sim.potential_energies, left=np.nan, right=np.nan) for sim in simulations])
 
     mean_KE = np.nanmean(KE, axis=0)
     std_KE = np.nanstd(KE, axis=0, ddof=1)
-
     mean_PE = np.nanmean(PE, axis=0)
     std_PE = np.nanstd(PE, axis=0, ddof=1)
-
-    time = simulations[0].energy_times
 
     # Mean Kinetic Energy
     plt.figure(figsize=(10, 5))
