@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from ase.io import read
 from pathlib import Path
 from types import SimpleNamespace
+import pandas as pd
 
 # Time axis (fs)
 def get_time(simulation):
@@ -235,58 +236,120 @@ def plot_nearest_distance(simulation, window_size=10, escape_distance=5.5):
     plt.show()
 
 
-def plot_energy_spaghetti(simulations):
-    colours = plt.cm.turbo(np.linspace(0, 1, len(simulations)))
+def prepare_energy_data(simulations, align=None, fixed=None, force_off=None):
+    results = None
+
+    if align is not None or fixed is not None or force_off is not None:
+        results = pd.read_csv("Outputs/Simulation results.csv")
+
+        results["fixed"] = results["fixed"].astype(str).str.lower().map({"true": True, "false": False})
+        results["force_off"] = results["force_off"].astype(str).str.lower().map({"true": True, "false": False})
+
+        if fixed is not None:
+            results = results[results["fixed"] == fixed]
+
+        if force_off is not None:
+            results = results[results["force_off"] == force_off]
+
+    aligned = []
+
+    for sim in simulations:
+        time = get_time(sim)
+        seed = int(Path(sim.trajectory_file).stem.split("_")[1])
+        PE = np.array(sim.potential_energies) - sim.potential_energies[0]
+
+        if align is not None:
+            row = results[(results["seed"] == seed) & (results["natoms"] == sim.natoms)]
+
+            if len(row) != 1:
+                print(f"Skipping simulation {seed}: found {len(row)} matching CSV rows")
+                continue
+
+            event_time = pd.to_numeric(row.iloc[0][align], errors="coerce")
+
+            if pd.isna(event_time):
+                print(f"Skipping simulation {seed}: no {align} recorded")
+                continue
+
+            time = time - event_time
+
+        aligned.append((time, np.array(sim.kinetic_energies), PE))
+
+    print(f"Prepared {len(aligned)} simulations.")
+    return aligned
+
+
+def plot_energy_spaghetti(simulations, align=None, fixed=None, force_off=None):
+    aligned = prepare_energy_data(simulations, align, fixed, force_off)
+    colours = plt.cm.turbo(np.linspace(0, 1, len(aligned)))
+    alignment_label = align.replace("_", " ").title() if align else "Simulation Start"
 
     # Kinetic Energy
     plt.figure(figsize=(10, 5))
-    for i, simulation in enumerate(simulations):
-        time = get_time(simulation)
-        KE = np.array(simulation.kinetic_energies)
+    for i, (time, KE, PE) in enumerate(aligned):
         plt.plot(time, KE, color=colours[i], alpha=0.7)
 
-    plt.xlabel("Time (fs)")
+    if align:
+        plt.axvline(0, color="black", linestyle="--", label=alignment_label)
+
+    plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
     plt.ylabel("Kinetic Energy (eV)")
-    plt.title("Kinetic Energy – Individual Simulations")
+    plt.title(f"Kinetic Energy – Individual Simulations ({alignment_label})")
+    plt.legend()
     plt.grid(alpha=0.4)
     plt.tight_layout()
     plt.show()
 
     # Potential Energy
     plt.figure(figsize=(10, 5))
-    for i, simulation in enumerate(simulations):
-        time = get_time(simulation)
-        PE = np.array(simulation.potential_energies)
+    for i, (time, KE, PE) in enumerate(aligned):
         plt.plot(time, PE, color=colours[i], alpha=0.7)
 
-    plt.xlabel("Time (fs)")
-    plt.ylabel("Potential Energy (eV)")
-    plt.title("Potential Energy – Individual Simulations")
+    if align:
+        plt.axvline(0, color="black", linestyle="--", label=alignment_label)
+
+    plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
+    plt.ylabel("Change in Potential Energy (eV)")
+    plt.title(f"Potential Energy – Individual Simulations ({alignment_label})")
+    plt.legend()
     plt.grid(alpha=0.4)
     plt.tight_layout()
     plt.show()
 
 
-def plot_mean_energy(simulations):
-    dt = simulations[0].stride * simulations[0].timestep
-    max_time = max(sim.energy_times[-1] for sim in simulations)
-    time = np.arange(0, max_time + dt, dt)
+def plot_mean_energy(simulations, align=None, fixed=None, force_off=None):
+    aligned = prepare_energy_data(simulations, align, fixed, force_off)
 
-    KE = np.array([np.interp(time, sim.energy_times, sim.kinetic_energies, left=np.nan, right=np.nan) for sim in simulations])
-    PE = np.array([np.interp(time, sim.energy_times, sim.potential_energies, left=np.nan, right=np.nan) for sim in simulations])
+    if not aligned:
+        print("No simulations available to plot.")
+        return
+
+    dt = aligned[0][0][1] - aligned[0][0][0]
+    min_time = min(time[0] for time, KE, PE in aligned)
+    max_time = max(time[-1] for time, KE, PE in aligned)
+    time = np.arange(min_time, max_time + 0.5 * dt, dt)
+
+    KE = np.array([np.interp(time, t, k, left=np.nan, right=np.nan) for t, k, p in aligned])
+    PE = np.array([np.interp(time, t, p, left=np.nan, right=np.nan) for t, k, p in aligned])
 
     mean_KE = np.nanmean(KE, axis=0)
     std_KE = np.nanstd(KE, axis=0, ddof=1)
     mean_PE = np.nanmean(PE, axis=0)
     std_PE = np.nanstd(PE, axis=0, ddof=1)
 
+    alignment_label = align.replace("_", " ").title() if align else "Simulation Start"
+
     # Mean Kinetic Energy
     plt.figure(figsize=(10, 5))
     plt.plot(time, mean_KE, color="blue", label="Mean KE")
     plt.fill_between(time, mean_KE - std_KE, mean_KE + std_KE, color="blue", alpha=0.2, label="±1 SD")
-    plt.xlabel("Time (fs)")
+
+    if align:
+        plt.axvline(0, color="black", linestyle="--", label=alignment_label)
+
+    plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
     plt.ylabel("Kinetic Energy (eV)")
-    plt.title("Mean Kinetic Energy")
+    plt.title(f"Mean Kinetic Energy ({alignment_label})")
     plt.legend()
     plt.grid(alpha=0.4)
     plt.tight_layout()
@@ -296,9 +359,13 @@ def plot_mean_energy(simulations):
     plt.figure(figsize=(10, 5))
     plt.plot(time, mean_PE, color="red", label="Mean PE")
     plt.fill_between(time, mean_PE - std_PE, mean_PE + std_PE, color="red", alpha=0.2, label="±1 SD")
-    plt.xlabel("Time (fs)")
-    plt.ylabel("Potential Energy (eV)")
-    plt.title("Mean Potential Energy")
+
+    if align:
+        plt.axvline(0, color="black", linestyle="--", label=alignment_label)
+
+    plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
+    plt.ylabel("Change in Potential Energy (eV)")
+    plt.title(f"Mean Potential Energy ({alignment_label})")
     plt.legend()
     plt.grid(alpha=0.4)
     plt.tight_layout()
