@@ -3,11 +3,12 @@ import numpy as np
 from .load_eam import load_eam
 from .potential import potential, kinetic
 
+
 class AMDC:
     def __init__(self, eam_file, positions, ensemble="NVT", seed=42):
         # Load EAM potential
         self.mass, self.cutoff, self.F_spline, self.density_spline, self.rphi_spline, self.F_derivative, self.density_derivative, self.rphi_derivative = load_eam(eam_file)
-        
+
         # Select ensemble
         self.ensemble = ensemble.upper()
         if self.ensemble not in ["NVE", "NVT"]:
@@ -37,15 +38,19 @@ class AMDC:
         self.non_conservative_atoms = np.zeros(self.natoms)
         self.non_conservative_force_enabled = False
         self.disable_force_on_shell_exit = False
+
+        # Event and energy records
         self.first_shell_exit_time = None
         self.first_return_time = None
         self.escape_time = None
         self.escape_kinetic_energy = None
         self.energy_times = []
+        self.potential_energies = []
+        self.kinetic_energies = []
+        self.total_energies = []
 
-        # Compute thresholds based on initial configuration
-        self.initial_distances = np.linalg.norm(self.positions[1:] - self.positions[0], axis=1)
-        self.first_shell_radius = np.min(self.initial_distances)
+        # Detection thresholds
+        self.first_shell_radius = np.min(np.linalg.norm(self.positions[1:] - self.positions[0], axis=1))
         self.escape_threshold = self.cutoff
 
         # Initial thermal velocities
@@ -59,15 +64,8 @@ class AMDC:
         self.decay = np.exp(-self.friction * delta)
         self.random_factor = np.sqrt(self.kB * self.temperature * self.accel_conversion / self.masses[0] * (1 - np.exp(-2 * self.friction * delta)))
 
-        # Track energy exchanged
         self.therm = 0.0
-
-        # Initial forces and energy
         self.calculate_forces()
-
-        self.potential_energies = []
-        self.kinetic_energies = []
-        self.total_energies = []
 
     def fix_atoms(self, atoms):
         self.moving_atoms[atoms] = 0
@@ -82,31 +80,16 @@ class AMDC:
         self.disable_force_on_shell_exit = True
 
     def non_conservative_force(self, K):
-        # Calculate centre of mass, excluding central atom
         centre_of_mass = np.average(self.positions[1:], axis=0, weights=self.masses[1:])
-
-        x0, y0, z0 = centre_of_mass
-
+        dx = self.positions[:, 0] - centre_of_mass[0]
+        dy = self.positions[:, 1] - centre_of_mass[1]
         forces = np.zeros((self.natoms, 3))
-
-        dx = self.positions[:, 0] - x0
-        dy = self.positions[:, 1] - y0
-
         forces[:, 0] = -K * dy
         forces[:, 1] = K * dx
         return forces * self.non_conservative_atoms[:, None]
 
     def calculate_forces(self):
-        self.eng, self.forces = potential(
-            self.positions,
-            self.cutoff,
-            self.F_spline,
-            self.density_spline,
-            self.rphi_spline,
-            self.F_derivative,
-            self.density_derivative,
-            self.rphi_derivative)
-        
+        self.eng, self.forces = potential(self.positions, self.cutoff, self.F_spline, self.density_spline, self.rphi_spline, self.F_derivative, self.density_derivative, self.rphi_derivative)
         if self.non_conservative_force_enabled and np.any(self.non_conservative_atoms):
             self.forces += self.non_conservative_force(self.K)
 
@@ -117,72 +100,80 @@ class AMDC:
             file.write(f"Au {position[0]:.8f} {position[1]:.8f} {position[2]:.8f}\n")
 
     def md(self, nsteps=None, trajectory_file=None, until_escape=False, max_steps=100000):
-
         if until_escape:
             nsteps = max_steps
         elif nsteps is None:
             raise ValueError("Specify number of steps or set until_escape=True")
 
-        # Open trajectory file if a filename is provided
         xyz_file = None
         self.trajectory_file = None
         last_saved_step = None
 
         if trajectory_file is not None:
             self.trajectory_file = f"{trajectory_file}.xyz"
-            os.makedirs(os.path.dirname(self.trajectory_file), exist_ok=True)
+            os.makedirs(os.path.dirname(self.trajectory_file) or ".", exist_ok=True)
             xyz_file = open(self.trajectory_file, "w")
             self.write_xyz_frame(xyz_file)
             last_saved_step = self.steps
 
+        # Update thermostat coefficients using the current settings
+        delta = self.timestep / 2
+        self.decay = np.exp(-self.friction * delta)
+        self.random_factor = np.sqrt(self.kB * self.temperature * self.accel_conversion / self.masses[0] * (1 - np.exp(-2 * self.friction * delta)))
+
+        # Reset event records for this run
+        self.first_shell_exit_time = None
+        self.first_return_time = None
+        self.escape_time = None
+        self.escape_kinetic_energy = None
+        self.outcome = "unresolved"
+
         escaped = False
         first_shell_exited = False
 
-        self.outcome = "unresolved"
-        self.escape_time = None
-
-        # Moving average settings
+        # Moving average of central atom position for escape detection
         window_size = 10
         position_buffer = np.tile(self.positions[0], (window_size, 1))
         position_sum = np.sum(position_buffer, axis=0)
         buffer_index = 0
 
-        # Return detection
+        # Return detection: remain within half the first-shell radius for 200 fs
         return_radius = 0.5 * self.first_shell_radius
-        return_duration = 200
+        return_duration = 200.0
         radial_buffer = np.zeros(window_size)
         radial_sum = 0.0
         radial_buffer_index = 0
         return_counter = 0
+        return_start_time = None
 
         try:
-            # Velocity Verlet algorithm
             for _ in range(nsteps):
+                # Langevin thermostat half-step
                 if self.ensemble == "NVT":
                     self.therm += kinetic(self.vel, self.masses, self.accel_conversion)
                     self.vel = (self.vel * self.decay + self.random_factor * self.rng.normal(size=(self.natoms, 3))) * self.moving_atoms[:, None]
                     self.therm -= kinetic(self.vel, self.masses, self.accel_conversion)
 
-                self.vel += (0.5 * self.accel_conversion * self.forces / self.masses[:, None] * self.timestep) * self.moving_atoms[:, None]
+                # Velocity Verlet algorithm
+                self.vel += 0.5 * self.accel_conversion * self.forces / self.masses[:, None] * self.timestep * self.moving_atoms[:, None]
                 self.positions += self.vel * self.timestep * self.moving_atoms[:, None]
-                
-                # Check whether the central atom has left the first shell
+
+                # Detect first-shell exit
                 if until_escape and not first_shell_exited:
                     radial_distance = np.linalg.norm(self.positions[0] - self.centre)
-
                     if radial_distance > 1.1 * self.first_shell_radius:
                         first_shell_exited = True
                         self.first_shell_exit_time = (self.steps + 1) * self.timestep
                         radial_buffer.fill(radial_distance)
                         radial_sum = np.sum(radial_buffer)
-
                         if self.disable_force_on_shell_exit:
                             self.non_conservative_force_enabled = False
                             print(f"First shell exited at {self.first_shell_exit_time} fs. Non-conservative force switched off.")
-                                                
-                self.calculate_forces()
-                self.vel += (0.5 * self.accel_conversion * self.forces / self.masses[:, None] * self.timestep) * self.moving_atoms[:, None]
 
+                self.calculate_forces()
+                self.vel += 0.5 * self.accel_conversion * self.forces / self.masses[:, None] * self.timestep * self.moving_atoms[:, None]
+
+                # Langevin thermostat second half-step
                 if self.ensemble == "NVT":
                     self.therm += kinetic(self.vel, self.masses, self.accel_conversion)
                     self.vel = (self.vel * self.decay + self.random_factor * self.rng.normal(size=(self.natoms, 3))) * self.moving_atoms[:, None]
@@ -195,41 +186,32 @@ class AMDC:
                 position_buffer[buffer_index] = self.positions[0]
                 position_sum += position_buffer[buffer_index]
                 buffer_index = (buffer_index + 1) % window_size
-
                 average_position = position_sum / window_size
 
-                # Check for escape or return after first-shell exit
                 if until_escape and first_shell_exited:
-
-                    # Check for escape
+                    # Escape: central atom is beyond the EAM cutoff from every other atom
                     distances = np.linalg.norm(self.positions[1:] - average_position, axis=1)
                     escaped = np.all(distances > self.escape_threshold)
 
-                    # Check for first return
+                    # Return: moving-average radial distance stays below the return radius
                     if self.first_return_time is None:
-
                         radial_distance = np.linalg.norm(self.positions[0] - self.centre)
-                        radial_sum -= radial_buffer[radial_buffer_index]
+                        radial_sum += radial_distance - radial_buffer[radial_buffer_index]
                         radial_buffer[radial_buffer_index] = radial_distance
-                        radial_sum += radial_buffer[radial_buffer_index]
                         radial_buffer_index = (radial_buffer_index + 1) % window_size
-
                         average_radial_distance = radial_sum / window_size
 
                         if average_radial_distance < return_radius:
+                            if return_counter == 0:
+                                return_start_time = self.steps * self.timestep
                             return_counter += 1
+                            if return_counter * self.timestep >= return_duration:
+                                self.first_return_time = return_start_time
+                                if self.disable_force_on_shell_exit:
+                                    print(f"Central atom returned at {self.first_return_time} fs.")
                         else:
                             return_counter = 0
-
-                        if return_counter * self.timestep >= return_duration:
-                            self.first_return_time = self.steps * self.timestep
-                            print(f"Central atom returned at {self.first_return_time} fs.")
-
-                    # Check whether the atom has returned to the central region
-                    if average_radial_distance < return_radius:
-                        return_counter += 1
-                    else:
-                        return_counter = 0
+                            return_start_time = None
 
                 # Record energies and trajectory
                 if self.steps % self.stride == 0 or escaped:
@@ -238,10 +220,8 @@ class AMDC:
                     self.kinetic_energies.append(KE)
                     self.total_energies.append(self.eng + KE + self.therm)
                     self.energy_times.append(self.steps * self.timestep)
-
                     if escaped:
-                        self.escape_kinetic_energy = kinetic(self.vel[0:1], self.masses[0:1], self.accel_conversion)
-
+                        self.escape_kinetic_energy = kinetic(self.vel[:1], self.masses[:1], self.accel_conversion)
                     if xyz_file is not None and self.steps != last_saved_step:
                         self.write_xyz_frame(xyz_file)
                         last_saved_step = self.steps
@@ -249,7 +229,6 @@ class AMDC:
                 if escaped:
                     break
 
-            # Record final configuration if it has not already been saved
             if xyz_file is not None and self.steps != last_saved_step:
                 self.write_xyz_frame(xyz_file)
 
@@ -260,14 +239,7 @@ class AMDC:
 
         if escaped:
             self.outcome = "escaped"
+            self.escape_time = self.steps * self.timestep
         elif self.first_return_time is not None:
             self.outcome = "returned"
-        else:
-            self.outcome = "unresolved"
-
-        if escaped:
-            self.escape_time = self.steps * self.timestep
-        else:
-            self.escape_time = None
-
         return self.escape_time
