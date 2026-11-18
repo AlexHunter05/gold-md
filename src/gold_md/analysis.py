@@ -274,8 +274,6 @@ def prepare_energy_data(simulations, align=None, fixed=None, force_off=None):
             time = time - event_time
 
         aligned.append((time, np.array(sim.kinetic_energies), PE))
-
-    print(f"Prepared {len(aligned)} simulations.")
     return aligned
 
 
@@ -338,11 +336,14 @@ def plot_mean_energy(simulations, align=None, fixed=None, force_off=None):
     mean_KE = np.nanmean(KE, axis=0)
     mean_PE = np.nanmean(PE, axis=0)
 
-    std_KE = np.nanstd(KE, axis=0, ddof=1)
-    std_PE = np.nanstd(PE, axis=0, ddof=1)
+    std_KE = np.full(KE.shape[1], np.nan)
+    std_PE = np.full(PE.shape[1], np.nan)
 
-    std_KE[count_KE < 2] = np.nan
-    std_PE[count_PE < 2] = np.nan
+    valid_KE = count_KE >= 2
+    valid_PE = count_PE >= 2
+
+    std_KE[valid_KE] = np.nanstd(KE[:, valid_KE], axis=0, ddof=1)
+    std_PE[valid_PE] = np.nanstd(PE[:, valid_PE], axis=0, ddof=1)
 
     alignment_label = align.replace("_", " ").title() if align else "Simulation Start"
 
