@@ -31,6 +31,7 @@ def load_simulation(filename, stride=10, timestep=1.0, number_of_simulations=Non
 
     positions = np.array([atoms.get_positions() for atoms in read(filename, index=":")])
     simulation = SimpleNamespace()
+    simulation.natoms = positions.shape[1]
     simulation.trajectory_file = filename
     simulation.stride = stride
     simulation.timestep = timestep
