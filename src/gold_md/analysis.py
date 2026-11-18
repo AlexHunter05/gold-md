@@ -291,11 +291,11 @@ def plot_energy_spaghetti(simulations, align=None, fixed=None, force_off=None):
 
     if align:
         plt.axvline(0, color="black", linestyle="--", label=alignment_label)
+        plt.legend()
 
     plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
     plt.ylabel("Kinetic Energy (eV)")
     plt.title(f"Kinetic Energy – Individual Simulations ({alignment_label})")
-    plt.legend()
     plt.grid(alpha=0.4)
     plt.tight_layout()
     plt.show()
@@ -307,11 +307,11 @@ def plot_energy_spaghetti(simulations, align=None, fixed=None, force_off=None):
 
     if align:
         plt.axvline(0, color="black", linestyle="--", label=alignment_label)
+        plt.legend()
 
     plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
     plt.ylabel("Change in Potential Energy (eV)")
     plt.title(f"Potential Energy – Individual Simulations ({alignment_label})")
-    plt.legend()
     plt.grid(alpha=0.4)
     plt.tight_layout()
     plt.show()
@@ -332,10 +332,17 @@ def plot_mean_energy(simulations, align=None, fixed=None, force_off=None):
     KE = np.array([np.interp(time, t, k, left=np.nan, right=np.nan) for t, k, p in aligned])
     PE = np.array([np.interp(time, t, p, left=np.nan, right=np.nan) for t, k, p in aligned])
 
+    count_KE = np.sum(~np.isnan(KE), axis=0)
+    count_PE = np.sum(~np.isnan(PE), axis=0)
+
     mean_KE = np.nanmean(KE, axis=0)
-    std_KE = np.nanstd(KE, axis=0, ddof=1)
     mean_PE = np.nanmean(PE, axis=0)
+
+    std_KE = np.nanstd(KE, axis=0, ddof=1)
     std_PE = np.nanstd(PE, axis=0, ddof=1)
+
+    std_KE[count_KE < 2] = np.nan
+    std_PE[count_PE < 2] = np.nan
 
     alignment_label = align.replace("_", " ").title() if align else "Simulation Start"
 
@@ -346,11 +353,11 @@ def plot_mean_energy(simulations, align=None, fixed=None, force_off=None):
 
     if align:
         plt.axvline(0, color="black", linestyle="--", label=alignment_label)
+        plt.legend()
 
     plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
     plt.ylabel("Kinetic Energy (eV)")
     plt.title(f"Mean Kinetic Energy ({alignment_label})")
-    plt.legend()
     plt.grid(alpha=0.4)
     plt.tight_layout()
     plt.show()
@@ -362,11 +369,11 @@ def plot_mean_energy(simulations, align=None, fixed=None, force_off=None):
 
     if align:
         plt.axvline(0, color="black", linestyle="--", label=alignment_label)
+        plt.legend()
 
     plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
     plt.ylabel("Change in Potential Energy (eV)")
     plt.title(f"Mean Potential Energy ({alignment_label})")
-    plt.legend()
     plt.grid(alpha=0.4)
     plt.tight_layout()
     plt.show()
