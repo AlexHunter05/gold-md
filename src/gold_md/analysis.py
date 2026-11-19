@@ -23,7 +23,7 @@ def load_simulation(filename, stride=10, timestep=1.0, number_of_simulations=Non
     path = Path(filename)
 
     if path.is_dir():
-        files = sorted(path.glob("simulation_*.xyz"))
+        files = sorted(path.glob("simulation_*.xyz"), key=lambda x: int(x.stem.split("_")[1]))
 
         if number_of_simulations is not None:
             files = files[:number_of_simulations]
@@ -236,20 +236,14 @@ def plot_nearest_distance(simulation, window_size=10, escape_distance=5.5):
     plt.show()
 
 
-def prepare_energy_data(simulations, align=None, fixed=None, force_off=None):
+def prepare_energy_data(simulations, align=None):
     results = None
 
-    if align is not None or fixed is not None or force_off is not None:
+    if align is not None:
         results = pd.read_csv("Outputs/Simulation results.csv")
 
         results["fixed"] = results["fixed"].astype(str).str.lower().map({"true": True, "false": False})
         results["force_off"] = results["force_off"].astype(str).str.lower().map({"true": True, "false": False})
-
-        if fixed is not None:
-            results = results[results["fixed"] == fixed]
-
-        if force_off is not None:
-            results = results[results["force_off"] == force_off]
 
     aligned = []
 
@@ -258,8 +252,16 @@ def prepare_energy_data(simulations, align=None, fixed=None, force_off=None):
         seed = int(Path(sim.trajectory_file).stem.split("_")[1])
         PE = np.array(sim.potential_energies) - sim.potential_energies[0]
 
+        folder_name = Path(sim.trajectory_file).parent.name.lower()
+        fixed = "fixed" in folder_name
+        force_off = "disabled" in folder_name
+
         if align is not None:
-            row = results[(results["seed"] == seed) & (results["natoms"] == sim.natoms)]
+            row = results[
+                (results["seed"] == seed) &
+                (results["natoms"] == sim.natoms) &
+                (results["fixed"] == fixed) &
+                (results["force_off"] == force_off)]
 
             if len(row) != 1:
                 print(f"Skipping simulation {seed}: found {len(row)} matching CSV rows")
@@ -274,11 +276,13 @@ def prepare_energy_data(simulations, align=None, fixed=None, force_off=None):
             time = time - event_time
 
         aligned.append((time, np.array(sim.kinetic_energies), PE))
+
+    print(f"Prepared {len(aligned)} simulations.")
     return aligned
 
 
-def plot_energy_spaghetti(simulations, align=None, fixed=None, force_off=None):
-    aligned = prepare_energy_data(simulations, align, fixed, force_off)
+def plot_energy_spaghetti(simulations, align=None):
+    aligned = prepare_energy_data(simulations, align)
     colours = plt.cm.turbo(np.linspace(0, 1, len(aligned)))
     alignment_label = align.replace("_", " ").title() if align else "Simulation Start"
 
@@ -288,7 +292,7 @@ def plot_energy_spaghetti(simulations, align=None, fixed=None, force_off=None):
         plt.plot(time, KE, color=colours[i], alpha=0.7)
 
     if align:
-        plt.axvline(0, color="black", linestyle="--", label=alignment_label)
+        plt.axvline(0, color="black", linestyle="--", label=alignment_label, alpha=0.5)
         plt.legend()
 
     plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
@@ -304,7 +308,7 @@ def plot_energy_spaghetti(simulations, align=None, fixed=None, force_off=None):
         plt.plot(time, PE, color=colours[i], alpha=0.7)
 
     if align:
-        plt.axvline(0, color="black", linestyle="--", label=alignment_label)
+        plt.axvline(0, color="black", linestyle="--", label=alignment_label, alpha=0.5)
         plt.legend()
 
     plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
@@ -315,8 +319,8 @@ def plot_energy_spaghetti(simulations, align=None, fixed=None, force_off=None):
     plt.show()
 
 
-def plot_mean_energy(simulations, align=None, fixed=None, force_off=None):
-    aligned = prepare_energy_data(simulations, align, fixed, force_off)
+def plot_mean_energy(simulations, align=None):
+    aligned = prepare_energy_data(simulations, align)
 
     if not aligned:
         print("No simulations available to plot.")
@@ -333,8 +337,14 @@ def plot_mean_energy(simulations, align=None, fixed=None, force_off=None):
     count_KE = np.sum(~np.isnan(KE), axis=0)
     count_PE = np.sum(~np.isnan(PE), axis=0)
 
-    mean_KE = np.nanmean(KE, axis=0)
-    mean_PE = np.nanmean(PE, axis=0)
+    mean_KE = np.full(KE.shape[1], np.nan)
+    mean_PE = np.full(PE.shape[1], np.nan)
+
+    valid_KE = count_KE > 0
+    valid_PE = count_PE > 0
+
+    mean_KE[valid_KE] = np.nanmean(KE[:, valid_KE], axis=0)
+    mean_PE[valid_PE] = np.nanmean(PE[:, valid_PE], axis=0)
 
     std_KE = np.full(KE.shape[1], np.nan)
     std_PE = np.full(PE.shape[1], np.nan)
@@ -353,7 +363,7 @@ def plot_mean_energy(simulations, align=None, fixed=None, force_off=None):
     plt.fill_between(time, mean_KE - std_KE, mean_KE + std_KE, color="blue", alpha=0.2, label="±1 SD")
 
     if align:
-        plt.axvline(0, color="black", linestyle="--", label=alignment_label)
+        plt.axvline(0, color="black", linestyle="--", label=alignment_label, alpha=0.5)
         plt.legend()
 
     plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
@@ -369,7 +379,7 @@ def plot_mean_energy(simulations, align=None, fixed=None, force_off=None):
     plt.fill_between(time, mean_PE - std_PE, mean_PE + std_PE, color="red", alpha=0.2, label="±1 SD")
 
     if align:
-        plt.axvline(0, color="black", linestyle="--", label=alignment_label)
+        plt.axvline(0, color="black", linestyle="--", label=alignment_label, alpha=0.5)
         plt.legend()
 
     plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
