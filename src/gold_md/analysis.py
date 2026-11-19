@@ -307,7 +307,7 @@ def plot_energy_spaghetti(simulations, align=None):
     # Potential Energy
     plt.figure(figsize=(10, 5))
     for i, (time, KE, PE) in enumerate(aligned):
-        plt.plot(time, PE, color=colours[i], alpha=0.7)
+        plt.plot(time, PE, color=colours[i], alpha=0.5)
 
     if align:
         plt.axvline(0, color="grey", linestyle="--", label=alignment_label, alpha=0.6)
@@ -361,8 +361,8 @@ def plot_mean_energy(simulations, align=None):
 
     # Mean Kinetic Energy
     plt.figure(figsize=(10, 5))
-    plt.plot(time, mean_KE, color="blue", label="Mean KE")
-    plt.fill_between(time, mean_KE - std_KE, mean_KE + std_KE, color="blue", alpha=0.2, label="±1 SD")
+    plt.plot(time, mean_KE, color="red", label="Mean KE")
+    plt.fill_between(time, mean_KE - std_KE, mean_KE + std_KE, color="red", alpha=0.2, label="±1 SD")
 
     if align:
         plt.axvline(0, color="grey", linestyle="--", label=alignment_label, alpha=0.6)
@@ -377,8 +377,8 @@ def plot_mean_energy(simulations, align=None):
 
     # Mean Potential Energy
     plt.figure(figsize=(10, 5))
-    plt.plot(time, mean_PE, color="red", label="Mean PE")
-    plt.fill_between(time, mean_PE - std_PE, mean_PE + std_PE, color="red", alpha=0.2, label="±1 SD")
+    plt.plot(time, mean_PE, color="blue", label="Mean PE")
+    plt.fill_between(time, mean_PE - std_PE, mean_PE + std_PE, color="blue", alpha=0.2, label="±1 SD")
 
     if align:
         plt.axvline(0, color="grey", linestyle="--", label=alignment_label, alpha=0.6)
