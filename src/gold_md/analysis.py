@@ -253,6 +253,7 @@ def prepare_energy_data(simulations, align=None):
         PE = np.array(sim.potential_energies) - sim.potential_energies[0]
 
         folder_name = Path(sim.trajectory_file).parent.name.lower()
+        shells = int(folder_name.split("_")[0])
         fixed = "fixed" in folder_name
         force_off = "disabled" in folder_name
 
@@ -275,7 +276,7 @@ def prepare_energy_data(simulations, align=None):
 
             time = time - event_time
 
-        aligned.append((time, np.array(sim.kinetic_energies), PE))
+        aligned.append((time, np.array(sim.kinetic_energies), PE, shells))
 
     print(f"Prepared {len(aligned)} simulations.")
     return aligned
@@ -283,7 +284,7 @@ def prepare_energy_data(simulations, align=None):
 
 def plot_energy_spaghetti(simulations, align=None):
     aligned = prepare_energy_data(simulations, align)
-    shells = sorted(set(sim.natoms for sim in simulations))
+    shells = aligned[0][3]
 
     colours = plt.cm.turbo(np.linspace(0, 1, len(aligned)))
     alignment_label = align.replace("_", " ").title() if align else "Simulation Start"
@@ -323,7 +324,7 @@ def plot_energy_spaghetti(simulations, align=None):
 
 def plot_mean_energy(simulations, align=None):
     aligned = prepare_energy_data(simulations, align)
-    shells = sorted(set(sim.shells for sim in simulations))
+    shells = aligned[0][3]
 
     if not aligned:
         print("No simulations available to plot.")
