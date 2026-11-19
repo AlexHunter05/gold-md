@@ -253,7 +253,7 @@ def prepare_energy_data(simulations, align=None):
         PE = np.array(sim.potential_energies) - sim.potential_energies[0]
 
         folder_name = Path(sim.trajectory_file).parent.name.lower()
-        shells = int(folder_name.split("_")[0])
+        nshells = int(folder_name.split("_")[0])
         fixed = "fixed" in folder_name
         force_off = "disabled" in folder_name
 
@@ -276,15 +276,14 @@ def prepare_energy_data(simulations, align=None):
 
             time = time - event_time
 
-        aligned.append((time, np.array(sim.kinetic_energies), PE, shells))
+        aligned.append((time, np.array(sim.kinetic_energies), PE))
 
     print(f"Prepared {len(aligned)} simulations.")
-    return aligned
+    return aligned, nshells
 
 
 def plot_energy_spaghetti(simulations, align=None):
-    aligned = prepare_energy_data(simulations, align)
-    shells = aligned[0][3]
+    aligned, nshells = prepare_energy_data(simulations, align)
 
     colours = plt.cm.turbo(np.linspace(0, 1, len(aligned)))
     alignment_label = align.replace("_", " ").title() if align else "Simulation Start"
@@ -300,7 +299,7 @@ def plot_energy_spaghetti(simulations, align=None):
 
     plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
     plt.ylabel("Kinetic Energy (eV)")
-    plt.title(f"Kinetic Energy – {shells} Shells ({alignment_label})")
+    plt.title(f"Kinetic Energy – {nshells} Shells ({alignment_label})")
     plt.grid(alpha=0.4)
     plt.tight_layout()
     plt.show()
@@ -316,15 +315,14 @@ def plot_energy_spaghetti(simulations, align=None):
 
     plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
     plt.ylabel("Change in Potential Energy (eV)")
-    plt.title(f"Potential Energy – {shells} Shells ({alignment_label})")
+    plt.title(f"Potential Energy – {nshells} Shells ({alignment_label})")
     plt.grid(alpha=0.4)
     plt.tight_layout()
     plt.show()
 
 
 def plot_mean_energy(simulations, align=None):
-    aligned = prepare_energy_data(simulations, align)
-    shells = aligned[0][3]
+    aligned, nshells = prepare_energy_data(simulations, align)
 
     if not aligned:
         print("No simulations available to plot.")
@@ -372,7 +370,7 @@ def plot_mean_energy(simulations, align=None):
 
     plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
     plt.ylabel("Kinetic Energy (eV)")
-    plt.title(f"Mean Kinetic Energy – {shells} Shells ({alignment_label})")
+    plt.title(f"Mean Kinetic Energy – {nshells} Shells ({alignment_label})")
     plt.grid(alpha=0.4)
     plt.tight_layout()
     plt.show()
@@ -388,7 +386,7 @@ def plot_mean_energy(simulations, align=None):
 
     plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
     plt.ylabel("Change in Potential Energy (eV)")
-    plt.title(f"Mean Potential Energy – {shells} Shells ({alignment_label})")
+    plt.title(f"Mean Potential Energy – {nshells} Shells ({alignment_label})")
     plt.grid(alpha=0.4)
     plt.tight_layout()
     plt.show()
