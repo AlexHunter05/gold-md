@@ -299,7 +299,7 @@ def plot_energy_spaghetti(simulations, align=None):
 
     plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
     plt.ylabel("Kinetic Energy (eV)")
-    plt.title(f"Kinetic Energy – {nshells} Shells ({alignment_label})")
+    plt.title(f"Kinetic Energy – {nshells} Shell cluster ({alignment_label})")
     plt.grid(alpha=0.4)
     plt.tight_layout()
     plt.show()
@@ -315,7 +315,7 @@ def plot_energy_spaghetti(simulations, align=None):
 
     plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
     plt.ylabel("Change in Potential Energy (eV)")
-    plt.title(f"Potential Energy – {nshells} Shells ({alignment_label})")
+    plt.title(f"Potential Energy – {nshells} Shell cluster ({alignment_label})")
     plt.grid(alpha=0.4)
     plt.tight_layout()
     plt.show()
@@ -370,7 +370,7 @@ def plot_mean_energy(simulations, align=None):
 
     plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
     plt.ylabel("Kinetic Energy (eV)")
-    plt.title(f"Mean Kinetic Energy – {nshells} Shells ({alignment_label})")
+    plt.title(f"Mean Kinetic Energy – {nshells} Shell cluster ({alignment_label})")
     plt.grid(alpha=0.4)
     plt.tight_layout()
     plt.show()
@@ -386,7 +386,7 @@ def plot_mean_energy(simulations, align=None):
 
     plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
     plt.ylabel("Change in Potential Energy (eV)")
-    plt.title(f"Mean Potential Energy – {nshells} Shells ({alignment_label})")
+    plt.title(f"Mean Potential Energy – {nshells} Shell cluster ({alignment_label})")
     plt.grid(alpha=0.4)
     plt.tight_layout()
     plt.show()
