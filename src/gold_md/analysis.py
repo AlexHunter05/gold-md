@@ -292,7 +292,7 @@ def plot_energy_spaghetti(simulations, align=None):
         plt.plot(time, KE, color=colours[i], alpha=0.7)
 
     if align:
-        plt.axvline(0, color="black", linestyle="--", label=alignment_label, alpha=0.5)
+        plt.axvline(0, color="grey", linestyle="--", label=alignment_label, alpha=0.5)
         plt.legend()
 
     plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
@@ -308,7 +308,7 @@ def plot_energy_spaghetti(simulations, align=None):
         plt.plot(time, PE, color=colours[i], alpha=0.7)
 
     if align:
-        plt.axvline(0, color="black", linestyle="--", label=alignment_label, alpha=0.5)
+        plt.axvline(0, color="grey", linestyle="--", label=alignment_label, alpha=0.5)
         plt.legend()
 
     plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
@@ -363,7 +363,7 @@ def plot_mean_energy(simulations, align=None):
     plt.fill_between(time, mean_KE - std_KE, mean_KE + std_KE, color="blue", alpha=0.2, label="±1 SD")
 
     if align:
-        plt.axvline(0, color="black", linestyle="--", label=alignment_label, alpha=0.5)
+        plt.axvline(0, color="grey", linestyle="--", label=alignment_label, alpha=0.4)
         plt.legend()
 
     plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
@@ -379,7 +379,7 @@ def plot_mean_energy(simulations, align=None):
     plt.fill_between(time, mean_PE - std_PE, mean_PE + std_PE, color="red", alpha=0.2, label="±1 SD")
 
     if align:
-        plt.axvline(0, color="black", linestyle="--", label=alignment_label, alpha=0.5)
+        plt.axvline(0, color="grey", linestyle="--", label=alignment_label, alpha=0.5)
         plt.legend()
 
     plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
