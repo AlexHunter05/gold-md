@@ -283,6 +283,8 @@ def prepare_energy_data(simulations, align=None):
 
 def plot_energy_spaghetti(simulations, align=None):
     aligned = prepare_energy_data(simulations, align)
+    shells = sorted(set(sim.natoms for sim in simulations))
+
     colours = plt.cm.turbo(np.linspace(0, 1, len(aligned)))
     alignment_label = align.replace("_", " ").title() if align else "Simulation Start"
 
@@ -292,12 +294,12 @@ def plot_energy_spaghetti(simulations, align=None):
         plt.plot(time, KE, color=colours[i], alpha=0.7)
 
     if align:
-        plt.axvline(0, color="grey", linestyle="--", label=alignment_label, alpha=0.5)
+        plt.axvline(0, color="grey", linestyle="--", label=alignment_label, alpha=0.6)
         plt.legend()
 
     plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
     plt.ylabel("Kinetic Energy (eV)")
-    plt.title(f"Kinetic Energy – Individual Simulations ({alignment_label})")
+    plt.title(f"Kinetic Energy – {shells} Shells ({alignment_label})")
     plt.grid(alpha=0.4)
     plt.tight_layout()
     plt.show()
@@ -308,12 +310,12 @@ def plot_energy_spaghetti(simulations, align=None):
         plt.plot(time, PE, color=colours[i], alpha=0.7)
 
     if align:
-        plt.axvline(0, color="grey", linestyle="--", label=alignment_label, alpha=0.5)
+        plt.axvline(0, color="grey", linestyle="--", label=alignment_label, alpha=0.6)
         plt.legend()
 
     plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
     plt.ylabel("Change in Potential Energy (eV)")
-    plt.title(f"Potential Energy – Individual Simulations ({alignment_label})")
+    plt.title(f"Potential Energy – {shells} Shells ({alignment_label})")
     plt.grid(alpha=0.4)
     plt.tight_layout()
     plt.show()
@@ -321,6 +323,7 @@ def plot_energy_spaghetti(simulations, align=None):
 
 def plot_mean_energy(simulations, align=None):
     aligned = prepare_energy_data(simulations, align)
+    shells = sorted(set(sim.shells for sim in simulations))
 
     if not aligned:
         print("No simulations available to plot.")
@@ -363,12 +366,12 @@ def plot_mean_energy(simulations, align=None):
     plt.fill_between(time, mean_KE - std_KE, mean_KE + std_KE, color="blue", alpha=0.2, label="±1 SD")
 
     if align:
-        plt.axvline(0, color="grey", linestyle="--", label=alignment_label, alpha=0.4)
+        plt.axvline(0, color="grey", linestyle="--", label=alignment_label, alpha=0.6)
         plt.legend()
 
     plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
     plt.ylabel("Kinetic Energy (eV)")
-    plt.title(f"Mean Kinetic Energy ({alignment_label})")
+    plt.title(f"Mean Kinetic Energy – {shells} Shells ({alignment_label})")
     plt.grid(alpha=0.4)
     plt.tight_layout()
     plt.show()
@@ -379,12 +382,12 @@ def plot_mean_energy(simulations, align=None):
     plt.fill_between(time, mean_PE - std_PE, mean_PE + std_PE, color="red", alpha=0.2, label="±1 SD")
 
     if align:
-        plt.axvline(0, color="grey", linestyle="--", label=alignment_label, alpha=0.5)
+        plt.axvline(0, color="grey", linestyle="--", label=alignment_label, alpha=0.6)
         plt.legend()
 
     plt.xlabel("Time (fs)" if align is None else f"Time relative to {alignment_label} (fs)")
     plt.ylabel("Change in Potential Energy (eV)")
-    plt.title(f"Mean Potential Energy ({alignment_label})")
+    plt.title(f"Mean Potential Energy – {shells} Shells ({alignment_label})")
     plt.grid(alpha=0.4)
     plt.tight_layout()
     plt.show()
