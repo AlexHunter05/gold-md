@@ -72,7 +72,7 @@ def save_result(simulation, natoms, fixed, turn_force_off, seed, escape_time, ma
         "first_shell_exit_time": simulation.first_shell_exit_time,
         "first_return_time": simulation.first_return_time,
         "escape_time": escape_time,
-        "escape_kinetic_energy": simulation.escape_kinetic_energy,
+        "escape_kinetic_energy": round(simulation.escape_kinetic_energy, 3),
         "max_steps": max_steps,
         "temperature": simulation.temperature,
         "force_constant": simulation.K,
