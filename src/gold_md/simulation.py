@@ -36,11 +36,10 @@ class AMDC:
         self.K = 1.0
         self.centre = self.positions[0].copy()
         self.non_conservative_atoms = np.zeros(self.natoms)
-        self.non_conservative_force_enabled = False
-        self.disable_force_on_shell_exit = False
+        self.force_mode = "always_off"
 
         # Event and energy records
-        self.first_shell_exit_time = None
+        self.shell_exit_times = {}
         self.first_return_time = None
         self.escape_time = None
         self.escape_kinetic_energy = None
@@ -50,7 +49,9 @@ class AMDC:
         self.total_energies = []
 
         # Detection thresholds
-        self.first_shell_radius = np.min(np.linalg.norm(self.positions[1:] - self.positions[0], axis=1))
+        self.initial_distances = np.linalg.norm(self.positions[1:] - self.positions[0], axis=1)
+        self.first_shell_radius = np.min(self.initial_distances)
+        self.shell_exit_thresholds = self.get_shell_exit_thresholds()
         self.escape_threshold = self.cutoff
 
         # Initial thermal velocities
@@ -67,17 +68,48 @@ class AMDC:
         self.therm = 0.0
         self.calculate_forces()
 
+    def get_shell_exit_thresholds(self):
+        sorted_distances = np.sort(self.initial_distances)
+        thresholds = {}
+        start = 0
+        shell = 2
+
+        while start < len(sorted_distances):
+            atom_count = 10 * (shell - 1)**2 + 2
+            shell_distances = sorted_distances[start:start + atom_count]
+
+            if len(shell_distances) != atom_count:
+                raise ValueError("The atomic configuration does not contain complete icosahedral shells.")
+
+            thresholds[shell] = 1.1 * np.min(shell_distances)
+            start += atom_count
+            shell += 1
+
+        return thresholds
+
     def fix_atoms(self, atoms):
         self.moving_atoms[atoms] = 0
         self.vel[atoms] = 0
 
-    def apply_non_conservative_force(self, atoms):
-        self.non_conservative_atoms[atoms] = 1
-        self.non_conservative_force_enabled = True
+    def set_force_mode(self, force_mode):
+        valid_modes = ["always_on", "always_off", "off_after_shell_2"]
+
+        if force_mode not in valid_modes:
+            raise ValueError(f"Invalid force_mode '{force_mode}'. Choose from {valid_modes}.")
+
+        self.force_mode = force_mode
         self.calculate_forces()
 
-    def disable_force_after_shell_exit(self):
-        self.disable_force_on_shell_exit = True
+    def apply_non_conservative_force(self, atoms, force_mode="always_on"):
+        self.non_conservative_atoms[atoms] = 1
+        self.set_force_mode(force_mode)
+
+    def force_is_active(self):
+        if self.force_mode == "always_on":
+            return True
+        if self.force_mode == "off_after_shell_2":
+            return 2 not in self.shell_exit_times
+        return False
 
     def non_conservative_force(self, K):
         centre_of_mass = np.average(self.positions[1:], axis=0, weights=self.masses[1:])
@@ -90,7 +122,8 @@ class AMDC:
 
     def calculate_forces(self):
         self.eng, self.forces = potential(self.positions, self.cutoff, self.F_spline, self.density_spline, self.rphi_spline, self.F_derivative, self.density_derivative, self.rphi_derivative)
-        if self.non_conservative_force_enabled and np.any(self.non_conservative_atoms):
+
+        if self.force_is_active() and np.any(self.non_conservative_atoms):
             self.forces += self.non_conservative_force(self.K)
 
     def write_xyz_frame(self, file):
@@ -122,14 +155,14 @@ class AMDC:
         self.random_factor = np.sqrt(self.kB * self.temperature * self.accel_conversion / self.masses[0] * (1 - np.exp(-2 * self.friction * delta)))
 
         # Reset event records for this run
-        self.first_shell_exit_time = None
+        self.shell_exit_times = {}
         self.first_return_time = None
         self.escape_time = None
         self.escape_kinetic_energy = None
         self.outcome = "unresolved"
+        self.calculate_forces()
 
         escaped = False
-        first_shell_exited = False
 
         # Moving average of central atom position for escape detection
         window_size = 10
@@ -158,17 +191,19 @@ class AMDC:
                 self.vel += 0.5 * self.accel_conversion * self.forces / self.masses[:, None] * self.timestep * self.moving_atoms[:, None]
                 self.positions += self.vel * self.timestep * self.moving_atoms[:, None]
 
-                # Detect first-shell exit
-                if until_escape and not first_shell_exited:
+                # Detect shell exits
+                if until_escape:
                     radial_distance = np.linalg.norm(self.positions[0] - self.centre)
-                    if radial_distance > 1.1 * self.first_shell_radius:
-                        first_shell_exited = True
-                        self.first_shell_exit_time = (self.steps + 1) * self.timestep
-                        radial_buffer.fill(radial_distance)
-                        radial_sum = np.sum(radial_buffer)
-                        if self.disable_force_on_shell_exit:
-                            self.non_conservative_force_enabled = False
-                            print(f"First shell exited at {self.first_shell_exit_time} fs. Non-conservative force switched off.")
+
+                    for shell, threshold in self.shell_exit_thresholds.items():
+                        if shell not in self.shell_exit_times and radial_distance > threshold:
+                            exit_time = (self.steps + 1) * self.timestep
+                            self.shell_exit_times[shell] = exit_time
+
+                            if shell == 2:
+                                radial_buffer.fill(radial_distance)
+                                radial_sum = np.sum(radial_buffer)
+                                print(f"Shell 2 exited at {exit_time} fs.")
 
                 self.calculate_forces()
                 self.vel += 0.5 * self.accel_conversion * self.forces / self.masses[:, None] * self.timestep * self.moving_atoms[:, None]
@@ -188,7 +223,7 @@ class AMDC:
                 buffer_index = (buffer_index + 1) % window_size
                 average_position = position_sum / window_size
 
-                if until_escape and first_shell_exited:
+                if until_escape and 2 in self.shell_exit_times:
                     # Escape: central atom is beyond the EAM cutoff from every other atom
                     distances = np.linalg.norm(self.positions[1:] - average_position, axis=1)
                     escaped = np.all(distances > self.escape_threshold)
@@ -205,10 +240,10 @@ class AMDC:
                             if return_counter == 0:
                                 return_start_time = self.steps * self.timestep
                             return_counter += 1
+
                             if return_counter * self.timestep >= return_duration:
                                 self.first_return_time = return_start_time
-                                if self.disable_force_on_shell_exit:
-                                    print(f"Central atom returned at {self.first_return_time} fs.")
+                                print(f"Central atom returned at {self.first_return_time} fs.")
                         else:
                             return_counter = 0
                             return_start_time = None
@@ -220,8 +255,10 @@ class AMDC:
                     self.kinetic_energies.append(KE)
                     self.total_energies.append(self.eng + KE + self.therm)
                     self.energy_times.append(self.steps * self.timestep)
+
                     if escaped:
                         self.escape_kinetic_energy = kinetic(self.vel[:1], self.masses[:1], self.accel_conversion)
+
                     if xyz_file is not None and self.steps != last_saved_step:
                         self.write_xyz_frame(xyz_file)
                         last_saved_step = self.steps
@@ -242,4 +279,5 @@ class AMDC:
             self.escape_time = self.steps * self.timestep
         elif self.first_return_time is not None:
             self.outcome = "returned"
+
         return self.escape_time
