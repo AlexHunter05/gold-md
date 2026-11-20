@@ -240,10 +240,9 @@ def prepare_energy_data(simulations, align=None):
     results = None
 
     if align is not None:
-        results = pd.read_csv("Outputs/Simulation results.csv")
-
+        results = pd.read_csv("Outputs/New simulation results.csv")
         results["fixed"] = results["fixed"].astype(str).str.lower().map({"true": True, "false": False})
-        results["force_off"] = results["force_off"].astype(str).str.lower().map({"true": True, "false": False})
+        results["force_mode"] = results["force_mode"].astype(str).str.lower()
 
     aligned = []
 
@@ -255,14 +254,15 @@ def prepare_energy_data(simulations, align=None):
         folder_name = Path(sim.trajectory_file).parent.name.lower()
         nshells = int(folder_name.split("_")[0])
         fixed = "fixed" in folder_name
-        force_off = "disabled" in folder_name
+        force_modes = ["always_on", "always_off", "off_after_shell_2"]
+        force_mode = next((mode for mode in force_modes if folder_name.endswith(mode)), None)
 
         if align is not None:
             row = results[
                 (results["seed"] == seed) &
                 (results["natoms"] == sim.natoms) &
                 (results["fixed"] == fixed) &
-                (results["force_off"] == force_off)]
+                (results["force_mode"] == force_mode)]
 
             if len(row) != 1:
                 print(f"Skipping simulation {seed}: found {len(row)} matching CSV rows")
